@@ -1,6 +1,8 @@
 # xclibc
 A libc environment switching tool
 ![D22GVYJ06YUU6~$GZ50@5(Q](https://user-images.githubusercontent.com/52035000/192204442-58215a17-09ea-4a55-8df7-ef55671e04e9.png)
+![image](https://user-images.githubusercontent.com/52035000/192210088-38295da1-d89f-46bc-9d75-3e86dcbae128.png)
+
 ## Usage
 This script is based on the glibc-all-in-one project
 
