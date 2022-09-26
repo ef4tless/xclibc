@@ -297,7 +297,7 @@ do
         ;;
         v)
         echo "xclibc v0.2"
-        echo "code by cntlrt."
+        echo "code by cnitlrt."
         echo "update by e4l4."
         exit -1
         ;;
