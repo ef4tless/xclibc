@@ -261,7 +261,7 @@ Record(){
 }
 
 
-while getopts 's:r:n:hvc:C' OPT
+while getopts 's:r:n:hvc:C:e' OPT
 do
     case $OPT in
         s) 
@@ -295,10 +295,34 @@ do
         C)
         chlibc $2 $3 $4
         ;;
+        e)
+        LIBC_PREFIX="libc6_"
+        LIBC_DBG_PREFIX="libc6-dbg_"
+        LIBC_DIR=~/glibc-all-in-one/
+        deb=$2
+        fondername0=${deb#*_}
+        fondername=${fondername0%.*}
+        if [ -d ~/glibc-all-in-one/libs/$fondername ];then
+            echo -e "[-]already exists, do overwrite"
+        else
+            mkdir $LIBC_DIR/libs/$fondername
+            mkdir $LIBC_DIR/libs/$fondername/.debug
+            echo -e "[+]create folder finish"
+        fi
+        if [[ $2 =~ $LIBC_DBG_PREFIX ]];then
+            extract $2 $LIBC_DIR/libs/$fondername/.debug
+            sudo chmod 755 -R $LIBC_DIR/libs/$fondername/.debug
+        else 
+            extract $2 $LIBC_DIR/libs/$fondername
+            sudo chmod 755 -R $LIBC_DIR/libs/$fondername
+        fi
+        ;;
         v)
-        echo "xclibc v0.2"
-        echo "code by cnitlrt."
-        echo "update by e4l4."
+        echo "xclibc v0.3"
+        echo "------------------"
+        echo "|code by cnitlrt.|"
+        echo "|update by e4l4. |"
+        echo "------------------"
         exit -1
         ;;
         h)
@@ -310,6 +334,7 @@ do
         echo "  -n,[file] [libcfile]                 switch the libc environment by modifying the needed"
         echo "  -c,[file] [version] [dir]            switch the specified libc version environment by modifying the rpath"
         echo "  -C,[file] [version] [dir]            switch the specified libc version environment by modifying the needed"
+        echo "  -e,[deb]                             extract the deb to the glibc-all-in-one"
         echo "  -h,                                  display this help and exit"
         echo "  -v,                                  output version information and exit"
         echo ""
@@ -321,6 +346,5 @@ do
         echo "        you can switch the libc environment where the pwn file runs to 2.35-0ubuntu3_amd64"
         exit -1
         ;;
-        ?) ;;
     esac
 done
