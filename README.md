@@ -21,6 +21,7 @@ sudo chmod +x /usr/local/bin/xclibc
 ```
 ## Update
 v0.5: 重定义了选项命令
+
 v0.3: 添加了解压deb包的功能
 ## Warning
 This script will delete /usr/lib/debug/.build/ before patching. If you mind, please backup it first
