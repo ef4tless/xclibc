@@ -77,11 +77,11 @@ clibc() {
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --set-rpath $3/ $1
             sudo rm -rf /usr/lib/debug/.build-id/
             sudo cp -r $3/.debug/.build-id/ /usr/lib/debug
-            die "success"
+            die "[+]success"
         else
         Record $1
         patchelf --set-interpreter $3/ld-$LIBC_VERSION.so --set-rpath $3/ $1
-        die "success"
+        die "[+]success"
         fi
     else
         printf '%s\n' "$libc_dir"
@@ -104,11 +104,11 @@ chlibc() {
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
             sudo rm -rf /usr/lib/debug/.build-id/
             sudo cp -r $3/.debug/.build-id/ /usr/lib/debug
-            die "success"
+            die "[+]success"
         else
         Record $1
         patchelf --set-interpreter $3/ld-$LIBC_VERSION.so --replace-needed libc.so.6 $3/libc-$LIBC_VERSION.so $1
-        die "success"
+        die "[+]success"
         fi
     else
         printf '%s\n' "$libc_dir"
@@ -124,7 +124,7 @@ download_rpath() {
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
         clibc $filename $version $LIBC_DIR/libs/$id
-        die "success"
+        die "[+]success"
     fi
     # download binary package
     url="$SOURCE/$deb_name"
@@ -147,7 +147,7 @@ download_rpath() {
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
     
     clibc $filename $version $LIBC_DIR/libs/$id
-    die "success"
+    die "[+]success"
 }
 download_old_rpath(){
     id=$libcversion'_'$arch
@@ -158,7 +158,7 @@ download_old_rpath(){
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
         clibc $filename $version $LIBC_DIR/libs/$id
-        die "success"
+        die "[+]success"
     fi
     # download binary package
     url="$OLD_SOURCE/$deb_name"
@@ -181,7 +181,7 @@ download_old_rpath(){
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
     clibc $filename $version $LIBC_DIR/libs/$id
-    die "success"
+    die "[+]success"
 }
 
 download_need() {
@@ -193,7 +193,7 @@ download_need() {
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
         chlibc $filename $version $LIBC_DIR/libs/$id
-        die "success"
+        die "[+]success"
     fi
     # download binary package
     url="$SOURCE/$deb_name"
@@ -215,7 +215,7 @@ download_need() {
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
     chlibc $filename $version $LIBC_DIR/libs/$id
-    die "success"
+    die "[+]success"
 }
 download_old_need(){
     id=$libcversion'_'$arch
@@ -226,7 +226,7 @@ download_old_need(){
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
         chlibc $filename $version $LIBC_DIR/libs/$id
-        die "success"
+        die "[+]success"
     fi
     # download binary package
     url="$OLD_SOURCE/$deb_name"
@@ -249,7 +249,7 @@ download_old_need(){
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
     chlibc $filename $version $LIBC_DIR/libs/$id
-    die "success"
+    die "[+]success"
 }
 
 Record(){
@@ -261,7 +261,7 @@ Record(){
 }
 
 
-while getopts 's:r:n:hvc:C:e' OPT
+while getopts 's:x:hvc:e:r:' OPT
 do
     case $OPT in
         s) 
@@ -269,31 +269,33 @@ do
         get_ver
         echo -e "\033[32mLIBC_VERSION: \033[0m"$libcversion
         ;;
-        r)
-        filename=$2
-        libcname=$3
-        LIBC_DIR=~/glibc-all-in-one
-        SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
-        OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
-        get_arch "$3"
-        get_ver
-        download_rpath
-        ;;
-        n) 
-        filename=$2
-        libcname=$3
-        LIBC_DIR=~/glibc-all-in-one
-        SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
-        OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
-        get_arch "$3"
-        get_ver
-        download_need
+        x)
+        if [ "$2" = "-n" ];then
+            filename=$3
+            libcname=$4
+            LIBC_DIR=~/glibc-all-in-one
+            SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
+            OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
+            get_arch "$4"
+            get_ver
+            download_need
+        else  
+            filename=$2
+            libcname=$3
+            LIBC_DIR=~/glibc-all-in-one
+            SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
+            OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
+            get_arch "$3"
+            get_ver
+            download_rpath
+        fi
         ;;
         c)
-        clibc $2 $3 $4
-        ;;
-        C)
-        chlibc $2 $3 $4
+        if [ "$2" = "-n" ];then
+            chlibc $3 $4 $5
+        else
+            clibc $2 $3 $4
+        fi
         ;;
         e)
         LIBC_PREFIX="libc6_"
@@ -317,29 +319,35 @@ do
             sudo chmod 755 -R $LIBC_DIR/libs/$fondername
         fi
         ;;
+        r)
+        if [ -e $2.bak ];then
+            cp $2.bak $2
+        else
+            exit -1
+        fi
+        ;;
         v)
-        echo "xclibc v0.3"
-        echo "------------------"
-        echo "|code by cnitlrt.|"
-        echo "|update by e4l4. |"
-        echo "------------------"
+        echo "xclibc v0.5"
+        echo "------------------------"
+        echo "|Update based on xclibc|"
+        echo "|Writen by E4L4        |"
+        echo "------------------------"
         exit -1
         ;;
         h)
         echo "Usage: xclibc [OPTION]...[FILE]..."
-        echo "Switch the libc environment for file running."
+        echo "Change the libc environment for file running."
         echo ""
-        echo "  -s,[libcfile]                        query the libc file version"
-        echo "  -r,[file] [libcfile]                 switch the libc environment by modifying the rpath"
-        echo "  -n,[file] [libcfile]                 switch the libc environment by modifying the needed"
-        echo "  -c,[file] [version] [dir]            switch the specified libc version environment by modifying the rpath"
-        echo "  -C,[file] [version] [dir]            switch the specified libc version environment by modifying the needed"
+        echo "  -s,[libcfile]                        see the libc file version"
+        echo "  -x,[-n] [file] [libcfile]            change the libc environment,-n:by modifying --replace-needed"
+        echo "  -c,[-n] [file] [version] [dir]       change the specified libc version environment,-n:by modifying --replace-needed"
         echo "  -e,[deb]                             extract the deb to the glibc-all-in-one"
+        echo "  -r,[file]                            restore original file"
         echo "  -h,                                  display this help and exit"
         echo "  -v,                                  output version information and exit"
         echo ""
         echo "Examples:"
-        echo "  xclibc -r pwn libc.so.6"
+        echo "  xclibc -x pwn libc.so.6"
         echo "        switch the version environment of the libc.so.6"
         echo "  xclibc -c pwn 2.35 [Enter]"
         echo "  xclibc -c pwn 2.35 /home/pwn/glibc-all-in-one/libs/2.35-0ubuntu3_amd64"
@@ -348,3 +356,5 @@ do
         ;;
     esac
 done
+
+echo -e "Usage: xclibc -h"
