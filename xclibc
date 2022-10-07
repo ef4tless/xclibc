@@ -322,12 +322,13 @@ do
         r)
         if [ -e $2.bak ];then
             cp $2.bak $2
+            echo -e "[+]restore!"
         else
             exit -1
         fi
         ;;
         v)
-        echo "xclibc v0.5"
+        echo "xclibc v0.6"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
@@ -356,5 +357,3 @@ do
         ;;
     esac
 done
-
-echo -e "Usage: xclibc -h"
