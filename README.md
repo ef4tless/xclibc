@@ -2,7 +2,7 @@
 
 ![banner](https://user-images.githubusercontent.com/52035000/192832394-8af0bf43-1be1-4d5b-8701-9b0d8057b190.png)
 
-一个在CTF比赛中用于切换题目运行libc环境的工具
+一个在CTF比赛中用于切换题目运行libc环境的工具，支持所有版本
 
 ## 安装
 
