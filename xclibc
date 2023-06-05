@@ -4,14 +4,17 @@ usage_dowload() {
   echo >&2 "Usage: $0 id"
   exit 2
 }
+
 usage_extract() {
   echo -e >&2 "Usage: $0 deb output"
   exit 2
 }
+
 die() {
   echo >&2 $1
   exit 1
 }
+
 get_arch() {
     local x86="X86-64"
     local x32="80386"
@@ -32,6 +35,7 @@ get_ver() {
     buf=$(strings $libcname |grep "GNU C Library" |awk '{print $6}')
     version=${buf%-*}
 }
+
 extract() {
     if [[ $# -ne 2 ]]; then
         usage_extract
@@ -61,10 +65,11 @@ extract() {
 
     rm -rf $tmp
 }
+
 clibc() {
     FILE_NAME=$1
     LIBC_VERSION=$2
-    LIBC_DIR=~/glibc-all-in-one
+    LIBC_DIR=$HOME/glibc-all-in-one
     libc_dir=$(find $LIBC_DIR -name "$LIBC_VERSION*")
     if [ "$libc_dir" = "" ];then
         echo "Not support version or your $LIBC_DIR don't have libc"
@@ -72,7 +77,7 @@ clibc() {
     fi
     if  [ "$3" ] 
     then
-        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]];then
+        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --set-rpath $3/ $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -91,7 +96,7 @@ clibc() {
 chlibc() {
     FILE_NAME=$1
     LIBC_VERSION=$2
-    LIBC_DIR=~/glibc-all-in-one
+    LIBC_DIR=$HOME/glibc-all-in-one
     libc_dir=$(find $LIBC_DIR -name "$LIBC_VERSION*")
     if [ "$libc_dir" = "" ];then
         echo "Not support version or your $LIBC_DIR don't have libc"
@@ -99,7 +104,7 @@ chlibc() {
     fi
     if  [ "$3" ] 
     then
-        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]];then
+        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -273,7 +278,7 @@ do
         if [ "$2" = "-n" ];then
             filename=$3
             libcname=$4
-            LIBC_DIR=~/glibc-all-in-one
+            LIBC_DIR=$HOME/glibc-all-in-one
             SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
             OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
             get_arch "$4"
@@ -282,7 +287,7 @@ do
         else  
             filename=$2
             libcname=$3
-            LIBC_DIR=~/glibc-all-in-one
+            LIBC_DIR=$HOME/glibc-all-in-one
             SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
             OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
             get_arch "$3"
@@ -300,11 +305,11 @@ do
         e)
         LIBC_PREFIX="libc6_"
         LIBC_DBG_PREFIX="libc6-dbg_"
-        LIBC_DIR=~/glibc-all-in-one/
+        LIBC_DIR=$HOME/glibc-all-in-one/
         deb=$2
         fondername0=${deb#*_}
         fondername=${fondername0%.*}
-        if [ -d ~/glibc-all-in-one/libs/$fondername ];then
+        if [ -d $HOME/glibc-all-in-one/libs/$fondername ];then
             echo -e "[-]already exists, do overwrite"
         else
             mkdir $LIBC_DIR/libs/$fondername
@@ -328,7 +333,7 @@ do
         fi
         ;;
         v)
-        echo "xclibc v0.6"
+        echo "xclibc v0.7"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
