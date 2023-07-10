@@ -1,6 +1,7 @@
 # xclibc
 
-![banner](https://user-images.githubusercontent.com/52035000/192832394-8af0bf43-1be1-4d5b-8701-9b0d8057b190.png)
+![image](https://github.com/ef4tless/xclibc/assets/52035000/d7bdfe61-20f8-4474-a369-0ac7e5c99eef)
+
 
 一个在CTF比赛中用于切换题目运行libc环境的工具，支持所有版本
 
@@ -31,6 +32,7 @@ xclibc [选项] [参数]
 -s [libc文件] # 查看libc文件版本
 -x [-n] [文件] [libc文件] # 一键给文件配置libc文件相应版本的环境（添加-n选项可以使用修改--replace-needed的方式实现）
 -c [-n] [文件] [libc大版本号] [libc小版本环境路径] # 给文件配置指定的libc环境，输入大版本号后回车，可自由选择复制libc小版本环境路径（添加-n选项可以使用修改--replace-needed的方式实现）
+-d [libc版本号] # 不加版本号回车可以查看可下载的libc版本，添加版本号可下载选择的libc版本库，如果是libc版本号==all，则会下载源上全部的libc版本
 -e [deb包] # 解压相应的libc_deb包至glibc_all_in_one路径，通常一个版本需要解压一份本体deb和一份debug_deb包
 -r [文件] # 恢复修改过的文件至初始状态
 -h # 展示帮助提示
@@ -38,6 +40,8 @@ xclibc [选项] [参数]
 ```
 
 ## 更新
+v0.9: 添加了-d下载libc版本库的功能，修复了2.31-0ubuntu9.10_amd64/i386不能加载的问题
+
 v0.7：修复了一个bug，该bug曾导致2.31-0ubuntu9.9_amd64/i386 版本在加载后不能正常debug
 
 v0.5: 重定义了选项命令
