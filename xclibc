@@ -1,4 +1,5 @@
 #!/bin/bash
+# Author: e4l4
 
 usage_dowload() {
   echo >&2 "Usage: $0 id"
@@ -77,7 +78,7 @@ clibc() {
     fi
     if  [ "$3" ] 
     then
-        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
+        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_i386" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --set-rpath $3/ $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -93,7 +94,7 @@ clibc() {
         echo -e '\033[32mPlease specify the directory \033[0m'
     fi
 }
-chlibc() {
+clibc_n() {
     FILE_NAME=$1
     LIBC_VERSION=$2
     LIBC_DIR=$HOME/glibc-all-in-one
@@ -104,7 +105,7 @@ chlibc() {
     fi
     if  [ "$3" ] 
     then
-        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
+        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_i386" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -120,6 +121,8 @@ chlibc() {
         echo -e '\033[32mPlease specify the directory \033[0m'
     fi
 }
+
+
 download_rpath() {
     id=$libcversion'_'$arch
     local LIBC_PREFIX="libc6_"
@@ -154,6 +157,7 @@ download_rpath() {
     clibc $filename $version $LIBC_DIR/libs/$id
     die "[+]success"
 }
+
 download_old_rpath(){
     id=$libcversion'_'$arch
     local LIBC_PREFIX="libc6_"
@@ -197,7 +201,7 @@ download_need() {
     local dbg_name=$LIBC_DBG_PREFIX$id.deb
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
-        chlibc $filename $version $LIBC_DIR/libs/$id
+        clibc_n $filename $version $LIBC_DIR/libs/$id
         die "[+]success"
     fi
     # download binary package
@@ -219,7 +223,7 @@ download_need() {
     mkdir $LIBC_DIR/libs/$id/.debug
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
-    chlibc $filename $version $LIBC_DIR/libs/$id
+    clibc_n $filename $version $LIBC_DIR/libs/$id
     die "[+]success"
 }
 download_old_need(){
@@ -230,7 +234,7 @@ download_old_need(){
     local dbg_name=$LIBC_DBG_PREFIX$id.deb
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
-        chlibc $filename $version $LIBC_DIR/libs/$id
+        clibc_n $filename $version $LIBC_DIR/libs/$id
         die "[+]success"
     fi
     # download binary package
@@ -253,7 +257,7 @@ download_old_need(){
     mkdir $LIBC_DIR/libs/$id/.debug
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
-    chlibc $filename $version $LIBC_DIR/libs/$id
+    clibc_n $filename $version $LIBC_DIR/libs/$id
     die "[+]success"
 }
 
@@ -265,8 +269,76 @@ Record(){
     fi
 }
 
+download_libc(){
+    if [ -z "$1" ]; then
+        # echo -e '\033[32m[+]Please wait for updates \033[0m'
+        # $HOME/glibc-all-in-one/update_list
+        echo -e '\033[32m[+]Select the version you want to download \033[0m'
+        echo -e '\033[34mBlue\033[0m is downloadable \033[32mGreen\033[0m is already downloaded'
+        echo ''
 
-while getopts 's:x:hvc:e:r:' OPT
+        # blue
+        light_blue=$(tput setaf 4)
+        # green
+        green=$(tput setaf 2)
+
+        reset=$(tput sgr0)
+
+        mkdir -p "$HOME/glibc-all-in-one/libs"
+
+        find "$HOME/glibc-all-in-one/libs" -maxdepth 1 -type d -exec sh -c '[ "$(basename {})" != "libs" ] && echo "$(basename {})"' \;  > $HOME/glibc-all-in-one/libs/libs.txt
+
+        sort -u "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list" $HOME/glibc-all-in-one/libs/libs.txt | while read line
+        do
+            if grep -Fxq "$line" $HOME/glibc-all-in-one/libs/libs.txt
+            then
+                echo "${green}${line}${reset}"
+            else
+                echo "${light_blue}${line}${reset}"
+            fi
+        done | column
+
+        rm $HOME/glibc-all-in-one/libs/libs.txt
+    else
+        if [ "$1" ]; then
+            if [ "$1" = "all" ]; then
+                version_count=$(cat "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list" | wc -l)
+                version_index=0
+                while IFS= read -r version
+                do
+                    if grep -Fxq "$version" "$HOME/glibc-all-in-one/list"
+                    then
+                        "$HOME/glibc-all-in-one/download" "$version"
+                    elif grep -Fxq "$version" "$HOME/glibc-all-in-one/old_list"
+                    then
+                        "$HOME/glibc-all-in-one/download_old" "$version"
+                    fi
+                    let version_index++
+                    percent=$((100*version_index/version_count))
+                    printf '\r[%-50s] %d%%' $(printf '%.0s#' $(seq 1 $((percent/2)))) $percent
+                    echo
+                done < <(cat "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list")
+                echo
+            elif grep -Fxq "$1" "$HOME/glibc-all-in-one/list"
+            then
+                "$HOME/glibc-all-in-one/download" "$1"
+            elif grep -Fxq "$1" "$HOME/glibc-all-in-one/old_list"
+            then
+                "$HOME/glibc-all-in-one/download_old" "$1"
+            elif [ -d "$HOME/glibc-all-in-one/libs/$1" ]
+            then
+                echo "This version already exists and there is no download method。"
+            else
+                echo "Unknown version: $1"
+            fi
+        fi
+    fi
+}
+
+
+
+
+while getopts 's:x:hvc:e:r:d' OPT
 do
     case $OPT in
         s) 
@@ -297,7 +369,7 @@ do
         ;;
         c)
         if [ "$2" = "-n" ];then
-            chlibc $3 $4 $5
+            clibc_n $3 $4 $5
         else
             clibc $2 $3 $4
         fi
@@ -332,8 +404,11 @@ do
             exit -1
         fi
         ;;
+        d)
+        download_libc $2
+        ;;
         v)
-        echo "xclibc v0.7"
+        echo "xclibc v0.9"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
@@ -347,6 +422,7 @@ do
         echo "  -s,[libcfile]                        see the libc file version"
         echo "  -x,<-n> [file] [libcfile]            change the libc environment,-n:by modifying --replace-needed"
         echo "  -c,<-n> [file] [version] [dir]       change the specified libc version environment,-n:by modifying --replace-needed"
+        echo "  -d,[version]                         download the libc version"
         echo "  -e,[deb]                             extract the deb to the glibc-all-in-one"
         echo "  -r,[file]                            restore original file"
         echo "  -h,                                  display this help and exit"
@@ -358,6 +434,10 @@ do
         echo "  xclibc -c pwn 2.35 [Enter]"
         echo "  xclibc -c pwn 2.35 /home/pwn/glibc-all-in-one/libs/2.35-0ubuntu3_amd64"
         echo "        you can switch the libc environment where the pwn file runs to 2.35-0ubuntu3_amd64"
+        echo "  xclibc -d [Enter]"
+        echo "  xclibc -d 2.37-0ubuntu2_amd64"
+        echo "  xclibc -d all"
+        echo "        you can download all the libc versions on the source"
         exit -1
         ;;
     esac
