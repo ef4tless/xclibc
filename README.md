@@ -50,6 +50,14 @@ xclibc [选项] [参数]
 -v # 显示版本号
 ```
 
+## 添加libc版本
+
+可以在脚本头部数组中添加新的版本和下载链接，一个libc版本需要一份本体和debug版本，2份下载链接
+e.g.libc6_2.31-0ubuntu1_amd64.deb 和 libc6-dbg_2.31-0ubuntu1_amd64.deb
+
+![image](https://github.com/ef4tless/xclibc/assets/52035000/991fe00d-777d-4aeb-8320-7a6d8c822e9d)
+
+
 ## 更新
 v1.0: 增加了旧的下架版本的匹配，现在-x功能能匹配更多的版本了，完善了-d libc包管理功能，优化了部分逻辑处理方式
 
