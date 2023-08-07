@@ -1,6 +1,278 @@
 #!/bin/bash
 # Author: e4l4
 
+declare -A urls
+urls=(
+    ["libc6_2.27-3ubuntu1.4_amd64.deb"]="http://launchpadlibrarian.net/510434953/libc6_2.27-3ubuntu1.4_amd64.deb"
+    ["libc6_2.27-3ubuntu1.3_amd64.deb"]="http://launchpadlibrarian.net/497108893/libc6_2.27-3ubuntu1.3_amd64.deb"
+    ["libc6_2.27-3ubuntu1.2_amd64.deb"]="http://launchpadlibrarian.net/482990870/libc6_2.27-3ubuntu1.2_amd64.deb"
+    ["libc6_2.27-3ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/365856922/libc6_2.27-3ubuntu1_amd64.deb"
+    ["libc6_2.27-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/363027601/libc6_2.27-0ubuntu3_amd64.deb"
+    ["libc6_2.27-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/358234306/libc6_2.27-0ubuntu2_amd64.deb"
+    ["libc6_2.26-0ubuntu2.1_amd64.deb"]="http://launchpadlibrarian.net/353428822/libc6_2.26-0ubuntu2.1_amd64.deb"
+    ["libc6_2.26-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/355198200/libc6_2.26-0ubuntu4_amd64.deb"
+    ["libc6_2.26-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/353888159/libc6_2.26-0ubuntu3_amd64.deb"
+    ["libc6_2.26-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/340569656/libc6_2.26-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.27-3ubuntu1.4_amd64.deb"]="http://launchpadlibrarian.net/510434945/libc6-dbg_2.27-3ubuntu1.4_amd64.deb"        
+    ["libc6-dbg_2.27-3ubuntu1.3_amd64.deb"]="http://launchpadlibrarian.net/497108885/libc6-dbg_2.27-3ubuntu1.3_amd64.deb"        
+    ["libc6-dbg_2.27-3ubuntu1.2_amd64.deb"]="http://launchpadlibrarian.net/482990856/libc6-dbg_2.27-3ubuntu1.2_amd64.deb"        
+    ["libc6-dbg_2.27-3ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/365856914/libc6-dbg_2.27-3ubuntu1_amd64.deb"
+    ["libc6-dbg_2.27-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/363027592/libc6-dbg_2.27-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.27-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/358234297/libc6-dbg_2.27-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.26-0ubuntu2.1_amd64.deb"]="http://launchpadlibrarian.net/353428813/libc6-dbg_2.26-0ubuntu2.1_amd64.deb"        
+    ["libc6-dbg_2.26-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/355198192/libc6-dbg_2.26-0ubuntu4_amd64.deb"
+    ["libc6-dbg_2.26-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/353888151/libc6-dbg_2.26-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.26-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/340569642/libc6-dbg_2.26-0ubuntu2_amd64.deb"
+    ["libc6_2.27-3ubuntu1.4_i386.deb"]="http://launchpadlibrarian.net/510430286/libc6_2.27-3ubuntu1.4_i386.deb"
+    ["libc6_2.27-3ubuntu1.3_i386.deb"]="http://launchpadlibrarian.net/497108431/libc6_2.27-3ubuntu1.3_i386.deb"
+    ["libc6_2.27-3ubuntu1.2_i386.deb"]="http://launchpadlibrarian.net/482991847/libc6_2.27-3ubuntu1.2_i386.deb"
+    ["libc6_2.27-3ubuntu1_i386.deb"]="http://launchpadlibrarian.net/365893745/libc6_2.27-3ubuntu1_i386.deb"
+    ["libc6_2.27-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/363028246/libc6_2.27-0ubuntu3_i386.deb"
+    ["libc6_2.27-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/358271059/libc6_2.27-0ubuntu2_i386.deb"
+    ["libc6_2.26-0ubuntu2.1_i386.deb"]="http://launchpadlibrarian.net/353428882/libc6_2.26-0ubuntu2.1_i386.deb"
+    ["libc6_2.26-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/355198504/libc6_2.26-0ubuntu4_i386.deb"
+    ["libc6_2.26-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/353884091/libc6_2.26-0ubuntu3_i386.deb"
+    ["libc6_2.26-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/340569286/libc6_2.26-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.27-3ubuntu1.4_i386.deb"]="http://launchpadlibrarian.net/510430279/libc6-dbg_2.27-3ubuntu1.4_i386.deb"
+    ["libc6-dbg_2.27-3ubuntu1.3_i386.deb"]="http://launchpadlibrarian.net/497108424/libc6-dbg_2.27-3ubuntu1.3_i386.deb"
+    ["libc6-dbg_2.27-3ubuntu1.2_i386.deb"]="http://launchpadlibrarian.net/482991840/libc6-dbg_2.27-3ubuntu1.2_i386.deb"
+    ["libc6-dbg_2.27-3ubuntu1_i386.deb"]="http://launchpadlibrarian.net/365893738/libc6-dbg_2.27-3ubuntu1_i386.deb"
+    ["libc6-dbg_2.27-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/363028238/libc6-dbg_2.27-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.27-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/358271050/libc6-dbg_2.27-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.26-0ubuntu2.1_i386.deb"]="http://launchpadlibrarian.net/353428865/libc6-dbg_2.26-0ubuntu2.1_i386.deb"
+    ["libc6-dbg_2.26-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/355198497/libc6-dbg_2.26-0ubuntu4_i386.deb"
+    ["libc6-dbg_2.26-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/353884083/libc6-dbg_2.26-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.26-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/340569275/libc6-dbg_2.26-0ubuntu2_i386.deb"
+    ["libc6_2.31-0ubuntu9.2_amd64.deb"]="http://launchpadlibrarian.net/511639304/libc6_2.31-0ubuntu9.2_amd64.deb"
+    ["libc6_2.31-0ubuntu9.3_amd64.deb"]="http://launchpadlibrarian.net/530777699/libc6_2.31-0ubuntu9.3_amd64.deb"
+    ["libc6_2.31-0ubuntu9.1_amd64.deb"]="http://launchpadlibrarian.net/496035825/libc6_2.31-0ubuntu9.1_amd64.deb"
+    ["libc6_2.31-0ubuntu9_amd64.deb"]="http://launchpadlibrarian.net/474699081/libc6_2.31-0ubuntu9_amd64.deb"
+    ["libc6_2.31-0ubuntu8_amd64.deb"]="http://launchpadlibrarian.net/473640372/libc6_2.31-0ubuntu8_amd64.deb"
+    ["libc6_2.31-0ubuntu7_amd64.deb"]="http://launchpadlibrarian.net/472714312/libc6_2.31-0ubuntu7_amd64.deb"
+    ["libc6_2.31-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/469103322/libc6_2.31-0ubuntu6_amd64.deb"
+    ["libc6_2.31-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/468754765/libc6_2.31-0ubuntu5_amd64.deb"
+    ["libc6_2.31-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/468697875/libc6_2.31-0ubuntu4_amd64.deb"
+    ["libc6_2.31-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/468409391/libc6_2.31-0ubuntu3_amd64.deb"
+    ["libc6_2.31-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/468093987/libc6_2.31-0ubuntu2_amd64.deb"
+    ["libc6_2.31-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/467985139/libc6_2.31-0ubuntu1_amd64.deb"
+    ["libc6_2.30-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/453587373/libc6_2.30-0ubuntu3_amd64.deb"
+    ["libc6_2.30-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/442988556/libc6_2.30-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu9.2_amd64.deb"]="http://launchpadlibrarian.net/511639295/libc6-dbg_2.31-0ubuntu9.2_amd64.deb"        
+    ["libc6-dbg_2.31-0ubuntu9.3_amd64.deb"]="http://launchpadlibrarian.net/530777688/libc6-dbg_2.31-0ubuntu9.3_amd64.deb"        
+    ["libc6-dbg_2.31-0ubuntu9.1_amd64.deb"]="http://launchpadlibrarian.net/496035817/libc6-dbg_2.31-0ubuntu9.1_amd64.deb"        
+    ["libc6-dbg_2.31-0ubuntu9_amd64.deb"]="http://launchpadlibrarian.net/474699070/libc6-dbg_2.31-0ubuntu9_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu8_amd64.deb"]="http://launchpadlibrarian.net/473640364/libc6-dbg_2.31-0ubuntu8_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu7_amd64.deb"]="http://launchpadlibrarian.net/472714300/libc6-dbg_2.31-0ubuntu7_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/469103311/libc6-dbg_2.31-0ubuntu6_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/468754757/libc6-dbg_2.31-0ubuntu5_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/468697865/libc6-dbg_2.31-0ubuntu4_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/468409382/libc6-dbg_2.31-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/468093977/libc6-dbg_2.31-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.31-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/467985130/libc6-dbg_2.31-0ubuntu1_amd64.deb"
+    ["libc6-dbg_2.30-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/453587361/libc6-dbg_2.30-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.30-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/442988547/libc6-dbg_2.30-0ubuntu2_amd64.deb"
+    ["libc6_2.31-0ubuntu9.2_i386.deb"]="http://launchpadlibrarian.net/511623696/libc6_2.31-0ubuntu9.2_i386.deb"
+    ["libc6_2.31-0ubuntu9.3_i386.deb"]="http://launchpadlibrarian.net/530801531/libc6_2.31-0ubuntu9.3_i386.deb"
+    ["libc6_2.31-0ubuntu9.1_i386.deb"]="http://launchpadlibrarian.net/496034463/libc6_2.31-0ubuntu9.1_i386.deb"
+    ["libc6_2.31-0ubuntu9_i386.deb"]="http://launchpadlibrarian.net/474699915/libc6_2.31-0ubuntu9_i386.deb"
+    ["libc6_2.31-0ubuntu8_i386.deb"]="http://launchpadlibrarian.net/473660642/libc6_2.31-0ubuntu8_i386.deb"
+    ["libc6_2.31-0ubuntu7_i386.deb"]="http://launchpadlibrarian.net/472695990/libc6_2.31-0ubuntu7_i386.deb"
+    ["libc6_2.31-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/469095363/libc6_2.31-0ubuntu6_i386.deb"
+    ["libc6_2.31-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/468757030/libc6_2.31-0ubuntu5_i386.deb"
+    ["libc6_2.31-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/468691825/libc6_2.31-0ubuntu4_i386.deb"
+    ["libc6_2.31-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/468409470/libc6_2.31-0ubuntu3_i386.deb"
+    ["libc6_2.31-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/468095010/libc6_2.31-0ubuntu2_i386.deb"
+    ["libc6_2.31-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/467975423/libc6_2.31-0ubuntu1_i386.deb"
+    ["libc6_2.30-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/453587260/libc6_2.30-0ubuntu3_i386.deb"
+    ["libc6_2.30-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/442987832/libc6_2.30-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu9.2_i386.deb"]="http://launchpadlibrarian.net/511623689/libc6-dbg_2.31-0ubuntu9.2_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu9.3_i386.deb"]="http://launchpadlibrarian.net/530801524/libc6-dbg_2.31-0ubuntu9.3_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu9.1_i386.deb"]="http://launchpadlibrarian.net/496034456/libc6-dbg_2.31-0ubuntu9.1_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu9_i386.deb"]="http://launchpadlibrarian.net/474699905/libc6-dbg_2.31-0ubuntu9_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu8_i386.deb"]="http://launchpadlibrarian.net/473660635/libc6-dbg_2.31-0ubuntu8_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu7_i386.deb"]="http://launchpadlibrarian.net/472695983/libc6-dbg_2.31-0ubuntu7_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/469095353/libc6-dbg_2.31-0ubuntu6_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/468757022/libc6-dbg_2.31-0ubuntu5_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/468691817/libc6-dbg_2.31-0ubuntu4_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/468409462/libc6-dbg_2.31-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/468095000/libc6-dbg_2.31-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.31-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/467975415/libc6-dbg_2.31-0ubuntu1_i386.deb"
+    ["libc6-dbg_2.30-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/453587253/libc6-dbg_2.30-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.30-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/442987822/libc6-dbg_2.30-0ubuntu2_i386.deb"
+    ["libc6_2.19-0ubuntu6.15_amd64.deb"]="http://launchpadlibrarian.net/416685715/libc6_2.19-0ubuntu6.15_amd64.deb"
+    ["libc6_2.19-0ubuntu6.14_amd64.deb"]="http://launchpadlibrarian.net/353606314/libc6_2.19-0ubuntu6.14_amd64.deb"
+    ["libc6_2.19-0ubuntu6.13_amd64.deb"]="http://launchpadlibrarian.net/324303878/libc6_2.19-0ubuntu6.13_amd64.deb"
+    ["libc6_2.19-0ubuntu6.11_amd64.deb"]="http://launchpadlibrarian.net/311779684/libc6_2.19-0ubuntu6.11_amd64.deb"
+    ["libc6_2.19-0ubuntu6.10_amd64.deb"]="http://launchpadlibrarian.net/309945315/libc6_2.19-0ubuntu6.10_amd64.deb"
+    ["libc6_2.19-0ubuntu6.9_amd64.deb"]="http://launchpadlibrarian.net/261740884/libc6_2.19-0ubuntu6.9_amd64.deb"
+    ["libc6_2.19-0ubuntu6.7_amd64.deb"]="http://launchpadlibrarian.net/239099297/libc6_2.19-0ubuntu6.7_amd64.deb"
+    ["libc6_2.19-0ubuntu6.8_amd64.deb"]="http://launchpadlibrarian.net/253297185/libc6_2.19-0ubuntu6.8_amd64.deb"
+    ["libc6_2.19-0ubuntu6.6_amd64.deb"]="http://launchpadlibrarian.net/198723917/libc6_2.19-0ubuntu6.6_amd64.deb"
+    ["libc6_2.19-0ubuntu6.5_amd64.deb"]="http://launchpadlibrarian.net/191853533/libc6_2.19-0ubuntu6.5_amd64.deb"
+    ["libc6_2.19-0ubuntu6.4_amd64.deb"]="http://launchpadlibrarian.net/191626563/libc6_2.19-0ubuntu6.4_amd64.deb"
+    ["libc6_2.19-0ubuntu6.3_amd64.deb"]="http://launchpadlibrarian.net/183374351/libc6_2.19-0ubuntu6.3_amd64.deb"
+    ["libc6_2.19-0ubuntu6.2_amd64.deb"]="http://launchpadlibrarian.net/183251024/libc6_2.19-0ubuntu6.2_amd64.deb"
+    ["libc6_2.19-0ubuntu6.1_amd64.deb"]="http://launchpadlibrarian.net/180923099/libc6_2.19-0ubuntu6.1_amd64.deb"
+    ["libc6_2.19-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/172657656/libc6_2.19-0ubuntu6_amd64.deb"
+    ["libc6_2.19-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/172507221/libc6_2.19-0ubuntu5_amd64.deb"
+    ["libc6_2.19-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/172335536/libc6_2.19-0ubuntu4_amd64.deb"
+    ["libc6_2.19-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/170525723/libc6_2.19-0ubuntu3_amd64.deb"
+    ["libc6_2.19-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/167413954/libc6_2.19-0ubuntu2_amd64.deb"
+    ["libc6_2.19-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/167162297/libc6_2.19-0ubuntu1_amd64.deb"
+    ["libc6_2.18-0ubuntu7_amd64.deb"]="http://launchpadlibrarian.net/166491656/libc6_2.18-0ubuntu7_amd64.deb"
+    ["libc6_2.18-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/162592045/libc6_2.18-0ubuntu6_amd64.deb"
+    ["libc6_2.18-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/162475177/libc6_2.18-0ubuntu5_amd64.deb"
+    ["libc6_2.18-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/162205900/libc6_2.18-0ubuntu4_amd64.deb"
+    ["libc6_2.18-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/162198013/libc6_2.18-0ubuntu3_amd64.deb"
+    ["libc6_2.18-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/160268315/libc6_2.18-0ubuntu2_amd64.deb"
+    ["libc6_2.18-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/159895958/libc6_2.18-0ubuntu1_amd64.deb"
+    ["libc6_2.17-93ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/153554145/libc6_2.17-93ubuntu4_amd64.deb"
+    ["libc6-dbg_2.19-0ubuntu6.15_amd64.deb"]="http://launchpadlibrarian.net/416685711/libc6-dbg_2.19-0ubuntu6.15_amd64.deb"      
+    ["libc6-dbg_2.19-0ubuntu6.14_amd64.deb"]="http://launchpadlibrarian.net/353606308/libc6-dbg_2.19-0ubuntu6.14_amd64.deb"      
+    ["libc6-dbg_2.19-0ubuntu6.13_amd64.deb"]="http://launchpadlibrarian.net/324303874/libc6-dbg_2.19-0ubuntu6.13_amd64.deb"      
+    ["libc6-dbg_2.19-0ubuntu6.11_amd64.deb"]="http://launchpadlibrarian.net/311779680/libc6-dbg_2.19-0ubuntu6.11_amd64.deb"      
+    ["libc6-dbg_2.19-0ubuntu6.10_amd64.deb"]="http://launchpadlibrarian.net/309945305/libc6-dbg_2.19-0ubuntu6.10_amd64.deb"      
+    ["libc6-dbg_2.19-0ubuntu6.9_amd64.deb"]="http://launchpadlibrarian.net/261740878/libc6-dbg_2.19-0ubuntu6.9_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.7_amd64.deb"]="http://launchpadlibrarian.net/239099293/libc6-dbg_2.19-0ubuntu6.7_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.8_amd64.deb"]="http://launchpadlibrarian.net/253297180/libc6-dbg_2.19-0ubuntu6.8_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.6_amd64.deb"]="http://launchpadlibrarian.net/198723929/libc6-dbg_2.19-0ubuntu6.6_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.5_amd64.deb"]="http://launchpadlibrarian.net/191853545/libc6-dbg_2.19-0ubuntu6.5_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.4_amd64.deb"]="http://launchpadlibrarian.net/191626582/libc6-dbg_2.19-0ubuntu6.4_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.3_amd64.deb"]="http://launchpadlibrarian.net/183374363/libc6-dbg_2.19-0ubuntu6.3_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.2_amd64.deb"]="http://launchpadlibrarian.net/183251049/libc6-dbg_2.19-0ubuntu6.2_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.1_amd64.deb"]="http://launchpadlibrarian.net/180923112/libc6-dbg_2.19-0ubuntu6.1_amd64.deb"        
+    ["libc6-dbg_2.19-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/172657668/libc6-dbg_2.19-0ubuntu6_amd64.deb"
+    ["libc6-dbg_2.19-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/172507234/libc6-dbg_2.19-0ubuntu5_amd64.deb"
+    ["libc6-dbg_2.19-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/172335567/libc6-dbg_2.19-0ubuntu4_amd64.deb"
+    ["libc6-dbg_2.19-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/170525760/libc6-dbg_2.19-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.19-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/167413976/libc6-dbg_2.19-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.19-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/167162310/libc6-dbg_2.19-0ubuntu1_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu7_amd64.deb"]="http://launchpadlibrarian.net/166491668/libc6-dbg_2.18-0ubuntu7_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/162592059/libc6-dbg_2.18-0ubuntu6_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/162475189/libc6-dbg_2.18-0ubuntu5_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/162205913/libc6-dbg_2.18-0ubuntu4_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/162198025/libc6-dbg_2.18-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/160268328/libc6-dbg_2.18-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.18-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/159895970/libc6-dbg_2.18-0ubuntu1_amd64.deb"
+    ["libc6-dbg_2.17-93ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/153554157/libc6-dbg_2.17-93ubuntu4_amd64.deb"
+    ["libc6_2.19-0ubuntu6.15_i386.deb"]="http://launchpadlibrarian.net/416683181/libc6_2.19-0ubuntu6.15_i386.deb"
+    ["libc6_2.19-0ubuntu6.14_i386.deb"]="http://launchpadlibrarian.net/353620296/libc6_2.19-0ubuntu6.14_i386.deb"
+    ["libc6_2.19-0ubuntu6.13_i386.deb"]="http://launchpadlibrarian.net/324303718/libc6_2.19-0ubuntu6.13_i386.deb"
+    ["libc6_2.19-0ubuntu6.11_i386.deb"]="http://launchpadlibrarian.net/311781625/libc6_2.19-0ubuntu6.11_i386.deb"
+    ["libc6_2.19-0ubuntu6.10_i386.deb"]="http://launchpadlibrarian.net/309945477/libc6_2.19-0ubuntu6.10_i386.deb"
+    ["libc6_2.19-0ubuntu6.9_i386.deb"]="http://launchpadlibrarian.net/261743624/libc6_2.19-0ubuntu6.9_i386.deb"
+    ["libc6_2.19-0ubuntu6.7_i386.deb"]="http://launchpadlibrarian.net/239076441/libc6_2.19-0ubuntu6.7_i386.deb"
+    ["libc6_2.19-0ubuntu6.8_i386.deb"]="http://launchpadlibrarian.net/253296598/libc6_2.19-0ubuntu6.8_i386.deb"
+    ["libc6_2.19-0ubuntu6.6_i386.deb"]="http://launchpadlibrarian.net/198724094/libc6_2.19-0ubuntu6.6_i386.deb"
+    ["libc6_2.19-0ubuntu6.5_i386.deb"]="http://launchpadlibrarian.net/191854268/libc6_2.19-0ubuntu6.5_i386.deb"
+    ["libc6_2.19-0ubuntu6.4_i386.deb"]="http://launchpadlibrarian.net/191626722/libc6_2.19-0ubuntu6.4_i386.deb"
+    ["libc6_2.19-0ubuntu6.3_i386.deb"]="http://launchpadlibrarian.net/183374272/libc6_2.19-0ubuntu6.3_i386.deb"
+    ["libc6_2.19-0ubuntu6.2_i386.deb"]="http://launchpadlibrarian.net/183251277/libc6_2.19-0ubuntu6.2_i386.deb"
+    ["libc6_2.19-0ubuntu6.1_i386.deb"]="http://launchpadlibrarian.net/180923468/libc6_2.19-0ubuntu6.1_i386.deb"
+    ["libc6_2.19-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/172658236/libc6_2.19-0ubuntu6_i386.deb"
+    ["libc6_2.19-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/172507582/libc6_2.19-0ubuntu5_i386.deb"
+    ["libc6_2.19-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/172335810/libc6_2.19-0ubuntu4_i386.deb"
+    ["libc6_2.19-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/170526514/libc6_2.19-0ubuntu3_i386.deb"
+    ["libc6_2.19-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/167416599/libc6_2.19-0ubuntu2_i386.deb"
+    ["libc6_2.19-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/167158545/libc6_2.19-0ubuntu1_i386.deb"
+    ["libc6_2.18-0ubuntu7_i386.deb"]="http://launchpadlibrarian.net/166493615/libc6_2.18-0ubuntu7_i386.deb"
+    ["libc6_2.18-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/162594269/libc6_2.18-0ubuntu6_i386.deb"
+    ["libc6_2.18-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/162478995/libc6_2.18-0ubuntu5_i386.deb"
+    ["libc6_2.18-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/162207798/libc6_2.18-0ubuntu4_i386.deb"
+    ["libc6_2.18-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/162200414/libc6_2.18-0ubuntu3_i386.deb"
+    ["libc6_2.18-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/160266182/libc6_2.18-0ubuntu2_i386.deb"
+    ["libc6_2.18-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/159898397/libc6_2.18-0ubuntu1_i386.deb"
+    ["libc6_2.17-93ubuntu4_i386.deb"]="http://launchpadlibrarian.net/153556377/libc6_2.17-93ubuntu4_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.15_i386.deb"]="http://launchpadlibrarian.net/416683177/libc6-dbg_2.19-0ubuntu6.15_i386.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.14_i386.deb"]="http://launchpadlibrarian.net/353620292/libc6-dbg_2.19-0ubuntu6.14_i386.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.13_i386.deb"]="http://launchpadlibrarian.net/324303714/libc6-dbg_2.19-0ubuntu6.13_i386.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.11_i386.deb"]="http://launchpadlibrarian.net/311781619/libc6-dbg_2.19-0ubuntu6.11_i386.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.10_i386.deb"]="http://launchpadlibrarian.net/309945473/libc6-dbg_2.19-0ubuntu6.10_i386.deb"        
+    ["libc6-dbg_2.19-0ubuntu6.9_i386.deb"]="http://launchpadlibrarian.net/261743620/libc6-dbg_2.19-0ubuntu6.9_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.7_i386.deb"]="http://launchpadlibrarian.net/239076422/libc6-dbg_2.19-0ubuntu6.7_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.8_i386.deb"]="http://launchpadlibrarian.net/253296594/libc6-dbg_2.19-0ubuntu6.8_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.6_i386.deb"]="http://launchpadlibrarian.net/198724109/libc6-dbg_2.19-0ubuntu6.6_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.5_i386.deb"]="http://launchpadlibrarian.net/191854280/libc6-dbg_2.19-0ubuntu6.5_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.4_i386.deb"]="http://launchpadlibrarian.net/191626734/libc6-dbg_2.19-0ubuntu6.4_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.3_i386.deb"]="http://launchpadlibrarian.net/183374284/libc6-dbg_2.19-0ubuntu6.3_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.2_i386.deb"]="http://launchpadlibrarian.net/183251294/libc6-dbg_2.19-0ubuntu6.2_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6.1_i386.deb"]="http://launchpadlibrarian.net/180923480/libc6-dbg_2.19-0ubuntu6.1_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/172658250/libc6-dbg_2.19-0ubuntu6_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/172507594/libc6-dbg_2.19-0ubuntu5_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/172335830/libc6-dbg_2.19-0ubuntu4_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/170526529/libc6-dbg_2.19-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/167416613/libc6-dbg_2.19-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.19-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/167158558/libc6-dbg_2.19-0ubuntu1_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu7_i386.deb"]="http://launchpadlibrarian.net/166493628/libc6-dbg_2.18-0ubuntu7_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/162594282/libc6-dbg_2.18-0ubuntu6_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/162479008/libc6-dbg_2.18-0ubuntu5_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/162207811/libc6-dbg_2.18-0ubuntu4_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/162200428/libc6-dbg_2.18-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/160266195/libc6-dbg_2.18-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.18-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/159898410/libc6-dbg_2.18-0ubuntu1_i386.deb"
+    ["libc6-dbg_2.17-93ubuntu4_i386.deb"]="http://launchpadlibrarian.net/153556390/libc6-dbg_2.17-93ubuntu4_i386.deb"
+    ["libc6_2.23-0ubuntu11.3_amd64.deb"]="http://launchpadlibrarian.net/534747115/libc6_2.23-0ubuntu11.3_amd64.deb"
+    ["libc6_2.23-0ubuntu11.2_amd64.deb"]="http://launchpadlibrarian.net/482985942/libc6_2.23-0ubuntu11.2_amd64.deb"
+    ["libc6_2.23-0ubuntu11_amd64.deb"]="http://launchpadlibrarian.net/409875491/libc6_2.23-0ubuntu11_amd64.deb"
+    ["libc6_2.23-0ubuntu10_amd64.deb"]="http://launchpadlibrarian.net/353523729/libc6_2.23-0ubuntu10_amd64.deb"
+    ["libc6_2.23-0ubuntu9_amd64.deb"]="http://launchpadlibrarian.net/324305509/libc6_2.23-0ubuntu9_amd64.deb"
+    ["libc6_2.23-0ubuntu7_amd64.deb"]="http://launchpadlibrarian.net/311784970/libc6_2.23-0ubuntu7_amd64.deb"
+    ["libc6_2.23-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/309946895/libc6_2.23-0ubuntu6_amd64.deb"
+    ["libc6_2.23-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/293727143/libc6_2.23-0ubuntu5_amd64.deb"
+    ["libc6_2.23-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/289526913/libc6_2.23-0ubuntu4_amd64.deb"
+    ["libc6_2.23-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/253857233/libc6_2.23-0ubuntu3_amd64.deb"
+    ["libc6_2.23-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/249648112/libc6_2.23-0ubuntu2_amd64.deb"
+    ["libc6_2.23-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/249034097/libc6_2.23-0ubuntu1_amd64.deb"
+    ["libc6_2.21-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/239453009/libc6_2.21-0ubuntu6_amd64.deb"
+    ["libc6_2.21-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/228543889/libc6_2.21-0ubuntu5_amd64.deb"
+    ["libc6_2.21-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/201272319/libc6_2.21-0ubuntu4_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu11.3_amd64.deb"]="http://launchpadlibrarian.net/534747094/libc6-dbg_2.23-0ubuntu11.3_amd64.deb"      
+    ["libc6-dbg_2.23-0ubuntu11.2_amd64.deb"]="http://launchpadlibrarian.net/482985919/libc6-dbg_2.23-0ubuntu11.2_amd64.deb"      
+    ["libc6-dbg_2.23-0ubuntu11_amd64.deb"]="http://launchpadlibrarian.net/409875473/libc6-dbg_2.23-0ubuntu11_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu10_amd64.deb"]="http://launchpadlibrarian.net/353523709/libc6-dbg_2.23-0ubuntu10_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu9_amd64.deb"]="http://launchpadlibrarian.net/324305490/libc6-dbg_2.23-0ubuntu9_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu7_amd64.deb"]="http://launchpadlibrarian.net/311784936/libc6-dbg_2.23-0ubuntu7_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/309946877/libc6-dbg_2.23-0ubuntu6_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/293727124/libc6-dbg_2.23-0ubuntu5_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/289526885/libc6-dbg_2.23-0ubuntu4_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu3_amd64.deb"]="http://launchpadlibrarian.net/253857215/libc6-dbg_2.23-0ubuntu3_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu2_amd64.deb"]="http://launchpadlibrarian.net/249648074/libc6-dbg_2.23-0ubuntu2_amd64.deb"
+    ["libc6-dbg_2.23-0ubuntu1_amd64.deb"]="http://launchpadlibrarian.net/249034077/libc6-dbg_2.23-0ubuntu1_amd64.deb"
+    ["libc6-dbg_2.21-0ubuntu6_amd64.deb"]="http://launchpadlibrarian.net/239452943/libc6-dbg_2.21-0ubuntu6_amd64.deb"
+    ["libc6-dbg_2.21-0ubuntu5_amd64.deb"]="http://launchpadlibrarian.net/228543855/libc6-dbg_2.21-0ubuntu5_amd64.deb"
+    ["libc6-dbg_2.21-0ubuntu4_amd64.deb"]="http://launchpadlibrarian.net/201272336/libc6-dbg_2.21-0ubuntu4_amd64.deb"
+    ["libc6_2.23-0ubuntu11.3_i386.deb"]="http://launchpadlibrarian.net/534757989/libc6_2.23-0ubuntu11.3_i386.deb"
+    ["libc6_2.23-0ubuntu11.2_i386.deb"]="http://launchpadlibrarian.net/483000140/libc6_2.23-0ubuntu11.2_i386.deb"
+    ["libc6_2.23-0ubuntu11_i386.deb"]="http://launchpadlibrarian.net/409874056/libc6_2.23-0ubuntu11_i386.deb"
+    ["libc6_2.23-0ubuntu10_i386.deb"]="http://launchpadlibrarian.net/353525843/libc6_2.23-0ubuntu10_i386.deb"
+    ["libc6_2.23-0ubuntu9_i386.deb"]="http://launchpadlibrarian.net/324303245/libc6_2.23-0ubuntu9_i386.deb"
+    ["libc6_2.23-0ubuntu7_i386.deb"]="http://launchpadlibrarian.net/311784686/libc6_2.23-0ubuntu7_i386.deb"
+    ["libc6_2.23-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/309944022/libc6_2.23-0ubuntu6_i386.deb"
+    ["libc6_2.23-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/293727477/libc6_2.23-0ubuntu5_i386.deb"
+    ["libc6_2.23-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/289528512/libc6_2.23-0ubuntu4_i386.deb"
+    ["libc6_2.23-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/253862443/libc6_2.23-0ubuntu3_i386.deb"
+    ["libc6_2.23-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/249647492/libc6_2.23-0ubuntu2_i386.deb"
+    ["libc6_2.23-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/249033821/libc6_2.23-0ubuntu1_i386.deb"
+    ["libc6_2.21-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/239433966/libc6_2.21-0ubuntu6_i386.deb"
+    ["libc6_2.21-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/228545013/libc6_2.21-0ubuntu5_i386.deb"
+    ["libc6_2.21-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/201272252/libc6_2.21-0ubuntu4_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu11.3_i386.deb"]="http://launchpadlibrarian.net/534757972/libc6-dbg_2.23-0ubuntu11.3_i386.deb"        
+    ["libc6-dbg_2.23-0ubuntu11.2_i386.deb"]="http://launchpadlibrarian.net/483000123/libc6-dbg_2.23-0ubuntu11.2_i386.deb"        
+    ["libc6-dbg_2.23-0ubuntu11_i386.deb"]="http://launchpadlibrarian.net/409874040/libc6-dbg_2.23-0ubuntu11_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu10_i386.deb"]="http://launchpadlibrarian.net/353525827/libc6-dbg_2.23-0ubuntu10_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu9_i386.deb"]="http://launchpadlibrarian.net/324303227/libc6-dbg_2.23-0ubuntu9_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu7_i386.deb"]="http://launchpadlibrarian.net/311784665/libc6-dbg_2.23-0ubuntu7_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/309943986/libc6-dbg_2.23-0ubuntu6_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/293727455/libc6-dbg_2.23-0ubuntu5_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/289528489/libc6-dbg_2.23-0ubuntu4_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu3_i386.deb"]="http://launchpadlibrarian.net/253862427/libc6-dbg_2.23-0ubuntu3_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu2_i386.deb"]="http://launchpadlibrarian.net/249647473/libc6-dbg_2.23-0ubuntu2_i386.deb"
+    ["libc6-dbg_2.23-0ubuntu1_i386.deb"]="http://launchpadlibrarian.net/249033803/libc6-dbg_2.23-0ubuntu1_i386.deb"
+    ["libc6-dbg_2.21-0ubuntu6_i386.deb"]="http://launchpadlibrarian.net/239433896/libc6-dbg_2.21-0ubuntu6_i386.deb"
+    ["libc6-dbg_2.21-0ubuntu5_i386.deb"]="http://launchpadlibrarian.net/228544996/libc6-dbg_2.21-0ubuntu5_i386.deb"
+    ["libc6-dbg_2.21-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/201272263/libc6-dbg_2.21-0ubuntu4_i386.deb"
+)
+
 usage_dowload() {
   echo >&2 "Usage: $0 id"
   exit 2
@@ -78,7 +350,7 @@ clibc() {
     fi
     if  [ "$3" ] 
     then
-        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_i386" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
+        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$3" =~ "$HOME/glibc-all-in-one/libs/2\.31-0ubuntu9\.([9-9][0-9]|10)_(amd64|i386)" ]]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --set-rpath $3/ $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -105,7 +377,7 @@ clibc_n() {
     fi
     if  [ "$3" ] 
     then
-        if [[ $(echo "$LIBC_VERSION >= 2.34"|bc) -eq 1 ]] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.10_i386" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_amd64" ] || [ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9.9_i386" ]; then
+        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$3" =~ "$HOME/glibc-all-in-one/libs/2\.31-0ubuntu9\.([9-9][0-9]|10)_(amd64|i386)" ]]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -122,6 +394,43 @@ clibc_n() {
     fi
 }
 
+download_url() {
+    LIBC_DIR=$HOME/glibc-all-in-one
+    local id=$1
+    local LIBC_PREFIX="libc6_"
+    local LIBC_DBG_PREFIX="libc6-dbg_"
+    local deb_name=$LIBC_PREFIX$id.deb
+    local dbg_name=$LIBC_DBG_PREFIX$id.deb
+    echo "Getting $id"
+    if [ -d "$LIBC_DIR/libs/$id" ]; then
+        die "  --> Downloaded before. Remove it to download again."
+    fi
+    # download binary package
+    url="${urls[$deb_name]}"
+    dbg_url="${urls[$dbg_name]}"
+
+    if [ -z "$url" ]; then
+        url="$SOURCE/$deb_name"
+        dbg_url="$SOURCE/$dbg_name"
+    fi
+    echo "  -> Location: $url"
+    echo "  -> Downloading libc binary package"
+    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name
+    echo "  -> Extracting libc binary package"
+    mkdir $LIBC_DIR/libs/$id
+    extract $LIBC_DIR/debs/$deb_name $LIBC_DIR/libs/$id
+    echo "  -> Package saved to $LIBC_DIR/libs/$id"
+
+    # download debug info package
+    echo "  -> Location: $dbg_url"
+    echo "  -> Downloading libc debug package"
+    sudo wget "$dbg_url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name
+    echo "  -> Extracting libc debug package"
+    mkdir $LIBC_DIR/libs/$id/.debug
+    extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
+    echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
+    die "[+]success"
+}
 
 download_rpath() {
     id=$libcversion'_'$arch
@@ -135,7 +444,13 @@ download_rpath() {
         die "[+]success"
     fi
     # download binary package
-    url="$SOURCE/$deb_name"
+    url="${urls[$deb_name]}"
+    dbg_url="${urls[$dbg_name]}"
+
+    if [ -z "$url" ]; then
+        url="$SOURCE/$deb_name"
+        dbg_url="$SOURCE/$dbg_name"
+    fi
     echo "  -> Location: $url"
     echo "  -> Downloading libc binary package"
     sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name || download_old_rpath
@@ -145,10 +460,9 @@ download_rpath() {
     echo "  -> Package saved to $LIBC_DIR/libs/$id"
 
     # download debug info package
-    url="$SOURCE/$dbg_name"
-    echo "  -> Location: $url"
+    echo "  -> Location: $dbg_url"
     echo "  -> Downloading libc debug package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || download_old_rpath
+    sudo wget "$dbg_url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || download_old_rpath
     echo "  -> Extracting libc debug package"
     mkdir $LIBC_DIR/libs/$id/.debug
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
@@ -205,7 +519,13 @@ download_need() {
         die "[+]success"
     fi
     # download binary package
-    url="$SOURCE/$deb_name"
+    url="${urls[$deb_name]}"
+    dbg_url="${urls[$dbg_name]}"
+
+    if [ -z "$url" ]; then
+        url="$SOURCE/$deb_name"
+        dbg_url="$SOURCE/$dbg_name"
+    fi
     echo "  -> Location: $url"
     echo "  -> Downloading libc binary package"
     sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name || download_old_need
@@ -215,10 +535,9 @@ download_need() {
     echo "  -> Package saved to $LIBC_DIR/libs/$id"
 
     # download debug info package
-    url="$SOURCE/$dbg_name"
-    echo "  -> Location: $url"
+    echo "  -> Location: $dbg_url"
     echo "  -> Downloading libc debug package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || download_old_need
+    sudo wget "$dbg_url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || download_old_need
     echo "  -> Extracting libc debug package"
     mkdir $LIBC_DIR/libs/$id/.debug
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
@@ -271,8 +590,6 @@ Record(){
 
 download_libc(){
     if [ -z "$1" ]; then
-        # echo -e '\033[32m[+]Please wait for updates \033[0m'
-        # $HOME/glibc-all-in-one/update_list
         echo -e '\033[32m[+]Select the version you want to download \033[0m'
         echo -e '\033[34mBlue\033[0m is downloadable \033[32mGreen\033[0m is already downloaded'
         echo ''
@@ -286,9 +603,16 @@ download_libc(){
 
         mkdir -p "$HOME/glibc-all-in-one/libs"
 
+        for key in "${!urls[@]}"; do
+            if [[ ! "$key" =~ libc6-dbg_ ]]; then 
+                version=$(echo "$key" | grep -oP 'libc6_\K.*(?=\.deb)') 
+                echo "$version" >> $HOME/glibc-all-in-one/libs/urls_versions.txt
+            fi
+        done
+
         find "$HOME/glibc-all-in-one/libs" -maxdepth 1 -type d -exec sh -c '[ "$(basename {})" != "libs" ] && echo "$(basename {})"' \;  > $HOME/glibc-all-in-one/libs/libs.txt
 
-        sort -u "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list" $HOME/glibc-all-in-one/libs/libs.txt | while read line
+        sort -u "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list" $HOME/glibc-all-in-one/libs/libs.txt $HOME/glibc-all-in-one/libs/urls_versions.txt | while read line
         do
             if grep -Fxq "$line" $HOME/glibc-all-in-one/libs/libs.txt
             then
@@ -298,7 +622,8 @@ download_libc(){
             fi
         done | column
 
-        rm $HOME/glibc-all-in-one/libs/libs.txt
+        # 清理临时文件
+        rm $HOME/glibc-all-in-one/libs/libs.txt $HOME/glibc-all-in-one/libs/urls_versions.txt
     else
         if [ "$1" ]; then
             if [ "$1" = "all" ]; then
@@ -328,6 +653,9 @@ download_libc(){
             elif [ -d "$HOME/glibc-all-in-one/libs/$1" ]
             then
                 echo "This version already exists and there is no download method。"
+            elif [ "${urls["libc6_$1.deb"]}" ]
+            then
+                download_url "$1" 
             else
                 echo "Unknown version: $1"
             fi
@@ -335,6 +663,31 @@ download_libc(){
     fi
 }
 
+
+
+download_old_libc(){
+    for deb in "${!urls[@]}"; do
+        url="${urls[$deb]}"
+        target="$HOME/glibc-all-in-one/debs/$deb"
+        wget "$url" -O "$target"
+        "$0" -e "$target"
+    done
+    echo -e '\033[32m[+]Successfully download '"$1"'\033[0m'
+}
+
+
+remove_libc(){
+    if [ $1 ];then
+        if [ -d "$HOME/glibc-all-in-one/libs/$1" ];then
+            rm -rf "$HOME/glibc-all-in-one/libs/$1"
+            echo -e '\033[32m[+]Successfully deleted '"$1"'\033[0m'
+        else
+            echo -e '\033[31m[!]'"$1"' not exist \033[0m'
+        fi
+    else
+        echo -e '\033[31m[!]Please enter the version \033[0m'
+    fi
+}
 
 
 
@@ -405,10 +758,22 @@ do
         fi
         ;;
         d)
-        download_libc $2
+        if [ "$2" = "-r" ];then
+            remove_libc $3
+        elif [ "$2" = "-u" ]
+        then
+            cd $HOME/glibc-all-in-one
+            $HOME/glibc-all-in-one/update_list
+            exit
+        elif [ "$2" = "old" ]
+        then
+            download_old_libc 
+        else
+            download_libc $2
+        fi
         ;;
         v)
-        echo "xclibc v0.9"
+        echo "xclibc v1.0"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
@@ -422,7 +787,7 @@ do
         echo "  -s,[libcfile]                        see the libc file version"
         echo "  -x,<-n> [file] [libcfile]            change the libc environment,-n:by modifying --replace-needed"
         echo "  -c,<-n> [file] [version] [dir]       change the specified libc version environment,-n:by modifying --replace-needed"
-        echo "  -d,[version]                         download the libc version"
+        echo "  -d,<-r/-u> [version]/[all]/[old]     download the libc version"
         echo "  -e,[deb]                             extract the deb to the glibc-all-in-one"
         echo "  -r,[file]                            restore original file"
         echo "  -h,                                  display this help and exit"
