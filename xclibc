@@ -352,7 +352,7 @@ clibc() {
     then
         version_number="${3##*2.31-0ubuntu9.}"
         version_number="${version_number%%_*}"
-        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$1" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* && "$version_number" -ge 9 ]]; then
+        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* && "$version_number" -ge 9 ]]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --set-rpath $3/ $1
             sudo rm -rf /usr/lib/debug/.build-id/
@@ -381,7 +381,7 @@ clibc_n() {
     then
         version_number="${3##*2.31-0ubuntu9.}"
         version_number="${version_number%%_*}"
-        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$1" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* && "$version_number" -ge 9 ]]; then
+        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* && "$version_number" -ge 9 ]]; then
             Record $1
             patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
             sudo rm -rf /usr/lib/debug/.build-id/
