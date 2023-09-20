@@ -348,9 +348,6 @@ clibc() {
         ARCH="amd64"
     elif [[ $3 =~ i386 ]]; then
         ARCH="i386"
-    else
-        echo "Architecture not found!"
-        exit 1
     fi
     if [ "$libc_dir" = "" ];then
         echo "Not support version or your $LIBC_DIR don't have libc"
@@ -388,9 +385,6 @@ clibc_replace_needed() {
         ARCH="amd64"
     elif [[ $3 =~ i386 ]]; then
         ARCH="i386"
-    else
-        echo "Architecture not found!"
-        exit 1
     fi
     if [ "$libc_dir" = "" ];then
         echo "Not support version or your $LIBC_DIR don't have libc"
