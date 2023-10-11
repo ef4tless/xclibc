@@ -894,7 +894,7 @@ do
                         else
                             echo -e "\033[31m$version The libc directory file is missing a file and has now been removed! \033[0m"
                             rm -rf $HOME/glibc-all-in-one/libs/$version
-                        exit
+                            exit
                         fi
                     fi
                 elif grep -Fxq "$version" "$HOME/glibc-all-in-one/old_list"
@@ -908,7 +908,7 @@ do
                         else
                             echo -e "\033[31m$version The libc directory file is missing a file and has now been removed! \033[0m"
                             rm -rf $HOME/glibc-all-in-one/libs/$version
-                        exit
+                            exit
                         fi
                     fi
                 fi
