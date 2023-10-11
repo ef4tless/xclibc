@@ -313,21 +313,14 @@ extract() {
     if [[ $# -ne 2 ]]; then
         usage_extract
     fi
-    local deb=`readlink -f $1`
+    local deb=$1
     local out=$2
     if [ ! -d "$out" ]; then
         mkdir $out
     fi
     local tmp=`mktemp -d`
+    dpkg -x $deb $tmp || die "dpkg failed"
 
-    cd $tmp
-    ar xv $deb || die "ar failed"
-    if [ -f "data.tar.zst" ];then
-        tar -I zstd -xf data.tar.* || die "tar failed"
-    else
-        tar xf data.tar.* || die "tar failed"
-    fi
-    cd -
 
     cp -rP $tmp/lib/*/* $out 2>/dev/null \
       || cp -rP $tmp/lib32/* $out 2>/dev/null \
@@ -337,6 +330,92 @@ extract() {
       || die "Failed to save. Check it manually $tmp"
 
     rm -rf $tmp
+}
+
+download() {
+    if [ ! -d "$HOME/glibc-all-in-one/libs" ]; then
+        mkdir $HOME/glibc-all-in-one/libs
+    fi
+
+    if [ ! -d "$HOME/glibc-all-in-one/debs" ];  then
+        mkdir $HOME/glibc-all-in-one/debs
+    fi
+    local id=$1
+    local LIBC_PREFIX="libc6_"
+    local LIBC_DBG_PREFIX="libc6-dbg_"
+    local deb_name=$LIBC_PREFIX$id.deb
+    local dbg_name=$LIBC_DBG_PREFIX$id.deb
+    echo "Getting $id"
+    if [ -d "libs/$id" ]; then
+        echo "  --> Downloaded before. Remove it to download again."
+    fi
+
+    SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
+    # Use the source below if you feel slow, or change it on your own.
+    # SOURCE="http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/"
+    local url="$SOURCE/$deb_name"
+
+    echo "  -> Location: $url"
+    echo "  -> Downloading libc binary package"
+    wget "$url" 2>/dev/null -O $HOME/glibc-all-in-one/debs/$deb_name || die "Failed to download package from $url"
+    echo "  -> Extracting libc binary package"
+
+    mkdir -p $HOME/glibc-all-in-one/libs/$id
+    extract $HOME/glibc-all-in-one/debs/$deb_name $HOME/glibc-all-in-one/libs/$id
+    echo "  -> Package saved to $HOME/glibc-all-in-one/libs/$id"
+
+    # download debug info package
+    local dbg_url="$SOURCE/$dbg_name"
+    echo "  -> Location: $dbg_url"
+    echo "  -> Downloading libc debug package"
+    wget "$dbg_url" 2>/dev/null -O $HOME/glibc-all-in-one/debs/$dbg_name || die "Failed to download package from $url"
+    echo "  -> Extracting libc debug package"
+
+    mkdir -p $HOME/glibc-all-in-one/libs/$id/.debug
+    extract $HOME/glibc-all-in-one/debs/$dbg_name $HOME/glibc-all-in-one/libs/$id/.debug
+    echo "  -> Package saved to $HOME/glibc-all-in-one/libs/$id/.debug"
+}
+
+download_old() {
+    if [ ! -d "$HOME/glibc-all-in-one/libs" ]; then
+        mkdir $HOME/glibc-all-in-one/libs
+    fi
+
+    if [ ! -d "$HOME/glibc-all-in-one/debs" ];  then
+        mkdir $HOME/glibc-all-in-one/debs
+    fi
+    local id=$1
+    local LIBC_PREFIX="libc6_"
+    local LIBC_DBG_PREFIX="libc6-dbg_"
+    local deb_name=$LIBC_PREFIX$id.deb
+    local dbg_name=$LIBC_DBG_PREFIX$id.deb
+    echo "Getting $id"
+    if [ -d "libs/$id" ]; then
+        echo "  --> Downloaded before. Remove it to download again."
+    fi
+
+    SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
+    local url="$SOURCE/$deb_name"
+
+    echo "  -> Location: $url"
+    echo "  -> Downloading libc binary package"
+    wget "$url" 2>/dev/null -O $HOME/glibc-all-in-one/debs/$deb_name || die "Failed to download package from $url"
+    echo "  -> Extracting libc binary package"
+
+    mkdir -p $HOME/glibc-all-in-one/libs/$id
+    extract $HOME/glibc-all-in-one/debs/$deb_name $HOME/glibc-all-in-one/libs/$id
+    echo "  -> Package saved to $HOME/glibc-all-in-one/libs/$id"
+
+    # download debug info package
+    local dbg_url="$SOURCE/$dbg_name"
+    echo "  -> Location: $dbg_url"
+    echo "  -> Downloading libc debug package"
+    wget "$dbg_url" 2>/dev/null -O $HOME/glibc-all-in-one/debs/$dbg_name || die "Failed to download package from $url"
+    echo "  -> Extracting libc debug package"
+
+    mkdir -p $HOME/glibc-all-in-one/libs/$id/.debug
+    extract $HOME/glibc-all-in-one/debs/$dbg_name $HOME/glibc-all-in-one/libs/$id/.debug
+    echo "  -> Package saved to $HOME/glibc-all-in-one/libs/$id/.debug"
 }
 
 clibc() {
@@ -601,19 +680,43 @@ Download_libc(){
         if [ "$1" ]; then
             if grep -Fxq "$1" "$HOME/glibc-all-in-one/list"
             then
-                "$HOME/glibc-all-in-one/download" "$1"
-                chmod 755 -R $HOME/glibc-all-in-one/libs/$1
+                download "$1"
+                if [ -f "$HOME/glibc-all-in-one/libs/$1/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$1/.debug" ]; then
+                    chmod 755 -R $HOME/glibc-all-in-one/libs/$1
+                else
+                    echo -e "\033[31m$1 The libc directory file is missing a file and has now been removed! \033[0m"
+                    rm -rf $HOME/glibc-all-in-one/libs/$1
+                    exit
+                fi
             elif grep -Fxq "$1" "$HOME/glibc-all-in-one/old_list"
             then
-                "$HOME/glibc-all-in-one/download_old" "$1"
-                chmod 755 -R $HOME/glibc-all-in-one/libs/$1
+                download_old "$1"
+                if [ -f "$HOME/glibc-all-in-one/libs/$1/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$1/.debug" ]; then
+                    chmod 755 -R $HOME/glibc-all-in-one/libs/$1
+                else
+                    echo -e "\033[31m$1 The libc directory file is missing a file and has now been removed! \033[0m"
+                    rm -rf $HOME/glibc-all-in-one/libs/$1
+                    exit
+                fi
             elif [ -d "$HOME/glibc-all-in-one/libs/$1" ]
             then
-                echo "This version already exists and there is no download method。"
+                if [ -f "$HOME/glibc-all-in-one/libs/$1/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$1/.debug" ]; then
+                    echo "This version already exists and there is no download method。"
+                else
+                    echo -e "\033[31m$1 The libc directory file is missing a file and has now been removed! \033[0m"
+                    rm -rf $HOME/glibc-all-in-one/libs/$1
+                    exit
+                fi
             elif [ "${urls["libc6_$1.deb"]}" ]
             then
                 download_url "$1" 
-                chmod 755 -R $HOME/glibc-all-in-one/libs/$1
+                if [ -f "$HOME/glibc-all-in-one/libs/$1/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$1/.debug" ]; then
+                    chmod 755 -R $HOME/glibc-all-in-one/libs/$1
+                else
+                    echo -e "\033[31m$1 The libc directory file is missing a file and has now been removed! \033[0m"
+                    rm -rf $HOME/glibc-all-in-one/libs/$1
+                    exit
+                fi
             else
                 echo "Unknown version: $1"
             fi
@@ -650,7 +753,7 @@ download_url() {
     fi
     echo "  -> Location: $url"
     echo "  -> Downloading libc binary package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name
+    sudo wget -c "$url" -O $LIBC_DIR/debs/$deb_name
     echo "  -> Extracting libc binary package"
     mkdir $LIBC_DIR/libs/$id
     extract $LIBC_DIR/debs/$deb_name $LIBC_DIR/libs/$id
@@ -659,7 +762,7 @@ download_url() {
     # download debug info package
     echo "  -> Location: $dbg_url"
     echo "  -> Downloading libc debug package"
-    sudo wget "$dbg_url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name
+    sudo wget -c "$dbg_url" -O $LIBC_DIR/debs/$dbg_name
     echo "  -> Extracting libc debug package"
     mkdir $LIBC_DIR/libs/$id/.debug
     extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
@@ -675,11 +778,11 @@ download_old_libc(){
         fondername0=${deb#*_}
         fondername=${fondername0%.*}
         echo "Getting $fondername"
-        if [ -d $HOME/glibc-all-in-one/libs/$fondername ];then
-            echo "--> Downloaded before. Remove it to download again."
-            continue
-        fi
-        wget "$url" -O "$target"
+        # if [ -d $HOME/glibc-all-in-one/libs/$fondername ];then
+        #     echo "--> Downloaded before. Remove it to download again."
+        #     continue
+        # fi
+        wget -c "$url" -O "$target"
         "$0" -e "$target"
     done
     echo -e '\033[32m[+]Successfully download '"$1"'\033[0m'
@@ -760,8 +863,11 @@ do
         fi
         ;;
         r)
-        Record $2
-        echo -e "[+]restore!"
+        if [ "$2" != "-r" ];
+        then
+            Record $2
+            echo -e "[+]restore!"
+        fi
         ;;
         d)
         if [ "$2" = "-r" ];
@@ -779,10 +885,32 @@ do
             do
                 if grep -Fxq "$version" "$HOME/glibc-all-in-one/list"
                 then
-                    "$HOME/glibc-all-in-one/download" "$version"
+                    if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                        echo "$version  --> Downloaded before"
+                    else
+                        download "$version"
+                        if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                            chmod 755 -R $HOME/glibc-all-in-one/libs/$version
+                        else
+                            echo -e "\033[31m$version The libc directory file is missing a file and has now been removed! \033[0m"
+                            rm -rf $HOME/glibc-all-in-one/libs/$version
+                        exit
+                        fi
+                    fi
                 elif grep -Fxq "$version" "$HOME/glibc-all-in-one/old_list"
                 then
-                    "$HOME/glibc-all-in-one/download_old" "$version"
+                   if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                        echo "$version  --> Downloaded before"
+                    else
+                        download_old "$version"
+                        if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                            chmod 755 -R $HOME/glibc-all-in-one/libs/$version
+                        else
+                            echo -e "\033[31m$version The libc directory file is missing a file and has now been removed! \033[0m"
+                            rm -rf $HOME/glibc-all-in-one/libs/$version
+                        exit
+                        fi
+                    fi
                 fi
                 let version_index++
                 percent=$((100*version_index/version_count))
@@ -793,7 +921,12 @@ do
 
             done < <(cat "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list")
             echo
-            download_old_libc
+            read -p "Do you want to download additional libc? (y/n): " choice
+            choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+            if [ "$choice" = "y" ]; then
+                echo "Downloading additional libc..."
+                download_old_libc
+            fi
             exit
         else
             Download_libc $2
