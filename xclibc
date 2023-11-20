@@ -933,7 +933,7 @@ do
         fi
         ;;
         v)
-        echo "xclibc v1.3"
+        echo "xclibc v1.4"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
