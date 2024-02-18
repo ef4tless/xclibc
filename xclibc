@@ -574,7 +574,7 @@ download_need() {
     local dbg_name=$LIBC_DBG_PREFIX$id.deb
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
-        clibc_n $filename $version $LIBC_DIR/libs/$id
+        clibc_replace_needed $filename $version $LIBC_DIR/libs/$id
         die "[+]success"
     fi
     # download binary package
@@ -612,7 +612,7 @@ download_old_need(){
     local dbg_name=$LIBC_DBG_PREFIX$id.deb
     echo "Getting $id"
     if [ -d "$LIBC_DIR/libs/$id" ]; then
-        clibc_n $filename $version $LIBC_DIR/libs/$id
+        clibc_replace_needed $filename $version $LIBC_DIR/libs/$id
         die "[+]success"
     fi
     # download binary package
@@ -933,7 +933,7 @@ do
         fi
         ;;
         v)
-        echo "xclibc v1.4"
+        echo "xclibc v1.5"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
