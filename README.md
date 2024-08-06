@@ -86,6 +86,8 @@ e.g.libc6_2.31-0ubuntu1_amd64.deb 和 libc6-dbg_2.31-0ubuntu1_amd64.deb
 
 
 ## 更新
+v1.5: 修复了在下载2.39版本时获取不到debug信息的问题
+
 v1.5: 修复了`xclibc -x -n`时出现的bug
 
 v1.3: 更新了代码逻辑修复了一些bug，简化了操作，删除了-e功能，将下载所有的libc版本集成到了`-d -u`命令中
