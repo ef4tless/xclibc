@@ -1,7 +1,5 @@
 # xclibc
-
-![image](https://github.com/ef4tless/xclibc/assets/52035000/9821856f-10ee-4843-a747-34a148c6d263)
-
+<img width="1026" height="342" alt="QQ_1764083944397" src="https://github.com/user-attachments/assets/24c68c42-5078-44fb-85e0-0ad564d6d17a" />
 
 
 一个在CTF比赛中用于切换题目运行libc环境的工具，支持目前所有版本
@@ -66,10 +64,10 @@ xclibc [选项] [参数]
 -s [libc文件] # 查看libc文件版本
 -x [-n] [文件] [libc文件] # 一键给文件配置libc文件相应版本的环境（添加-n选项可以使用修改--replace-needed的方式实现）
 -c [-n] [文件] [libc大版本号] [libc小版本环境路径] # 给文件配置指定的libc环境，输入大版本号后回车，可自由选择复制libc小版本环境路径（添加-n选项可以使用修改--replace-needed的方式实现）
--d <-r/-u> [version]
+-d <-r/-all> [version]
 #  -d [ENTER] 可以查看所有可下载的libc版本
 #  -d -r [version] 删除相应的libc版本库
-#  -d -u 更新最新的所有libc版本
+#  -d -all 更新最新的所有libc版本
 #  -d [version] 下载对应版本的libc
 -e [deb包] # 解压相应的libc_deb包至glibc_all_in_one路径，通常一个版本需要解压一份本体deb和一份debug_deb包
 -r [文件] # 恢复修改过的文件至初始状态
@@ -79,13 +77,16 @@ xclibc [选项] [参数]
 
 ## 添加libc版本
 
-可以在脚本头部数组中添加新的版本和下载链接，一个libc版本需要一份本体和debug版本，2份下载链接
-e.g.libc6_2.31-0ubuntu1_amd64.deb 和 libc6-dbg_2.31-0ubuntu1_amd64.deb
+可以在脚本头部数组中添加新的版本和下载链接，一个libc版本需要一份本体和debug版本共2份下载链接
+
+例如：2.31-0ubuntu1_amd64版本需要，libc6_2.31-0ubuntu1_amd64.deb 和 libc6-dbg_2.31-0ubuntu1_amd64.deb
 
 ![image](https://github.com/ef4tless/xclibc/assets/52035000/991fe00d-777d-4aeb-8320-7a6d8c822e9d)
 
 
 ## 更新
+v1.8: 整合优化了代码(ai)，处理了在多个库依赖情况下的层次依赖patch，优化了下载libc的命令和表现效果
+
 v1.6: 修复了在下载2.39版本时获取不到debug信息的问题
 
 v1.5: 修复了`xclibc -x -n`时出现的bug
