@@ -273,6 +273,26 @@ urls=(
     ["libc6-dbg_2.21-0ubuntu4_i386.deb"]="http://launchpadlibrarian.net/201272263/libc6-dbg_2.21-0ubuntu4_i386.deb"
 )
 
+show_help() {
+    echo "Usage: xclibc [OPTION] ..."
+    echo ""
+    echo "  -s <libcfile>                     show libc version"
+    echo "  -x [-n] <elf> <libcfile>          switch libc for ELF (-n: replace-needed)"
+    echo "  -c [-n] <elf> <version> [dir]     patch ELF to specified libc version"
+    echo "  -d <version>                      download specified libc"
+    echo "  -d all                            download all libc versions"
+    echo "  -d -r <version>                   remove specified libc version"
+    echo "  -r <elf>                          restore original ELF"
+    echo "  -h                                display help"
+    echo "  -v                                show version"
+    echo ""
+}
+
+if [ $# -eq 0 ]; then
+    show_help
+    exit 1
+fi
+
 usage_dowload() {
   echo >&2 "Usage: $0 id"
   exit 2
@@ -425,226 +445,259 @@ download_old() {
     echo "  -> Package saved to $HOME/glibc-all-in-one/libs/$id/.debug"
 }
 
+# 核心：mode = rpath / replace
+_xclibc_core() {
+    local mode="$1"           # rpath / replace
+    local FILE_NAME="$2"      # 要 patch 的 ELF
+    local LIBC_VERSION="$3"   # 比如 2.39
+    local TARGET_DIR="$4"     # 比如 /home/.../glibc-all-in-one/libs/2.39-0ubuntu8.4_amd64
+
+    local LIBC_DIR="$HOME/glibc-all-in-one"
+    local libc_dir
+
+    # 必须先有版本号，否则不去 find，直接提示
+    if [ -z "$LIBC_VERSION" ]; then
+        echo "Usage: xclibc -c <elf> <libc_version> [libc_dir]"
+        echo "       libc_version example: 2.39"
+        return 1
+    fi
+
+    # 只在有版本号的前提下去找目录，顺便限制一下深度，避免把所有子树都扫一遍
+    libc_dir=$(find "$LIBC_DIR" -maxdepth 3 -type d -name "${LIBC_VERSION}*")
+
+    if [ -z "$libc_dir" ]; then
+        echo "Not support version or your $LIBC_DIR doesn't have libc for $LIBC_VERSION"
+        return 1
+    fi
+
+    # 判定架构（根据 TARGET_DIR 字符串里有没有 amd64 / i386）
+    local ARCH=""
+    if [[ $TARGET_DIR =~ amd64 ]]; then
+        ARCH="amd64"
+    elif [[ $TARGET_DIR =~ i386 ]]; then
+        ARCH="i386"
+    fi
+
+    if [ -n "$TARGET_DIR" ]; then
+        # 版本号解析
+        local version_number
+        version_number="${TARGET_DIR##*2.31-0ubuntu9.}"
+        version_number="${version_number%%_*}"
+
+        Record "$FILE_NAME"
+
+        # 1) 先统一只设置 interpreter
+        if [ "$ARCH" == "i386" ]; then
+            patchelf --set-interpreter "$TARGET_DIR/ld-linux.so.2" "$FILE_NAME"
+        else
+            patchelf --set-interpreter "$TARGET_DIR/ld-linux-x86-64.so.2" "$FILE_NAME"
+        fi
+
+        # rpath 模式：额外给主程序设 RUNPATH
+        if [ "$mode" = "rpath" ]; then
+            patchelf --set-rpath "$TARGET_DIR" "$FILE_NAME"
+        fi
+
+        # 2) 复制 .build-id
+        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] \
+           || { [[ "$TARGET_DIR" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* ]] && [[ "$version_number" -ge 9 ]]; }; then
+            sudo rm -rf /usr/lib/debug/.build-id/
+            sudo cp -r "$TARGET_DIR/.debug/.build-id/" /usr/lib/debug
+        fi
+
+        # 3) 读主程序 NEEDED，要求库都在 TARGET_DIR 里，然后按模式处理
+        echo "[*] Checking NEEDED libraries for $FILE_NAME ..."
+        local needed_libs
+        needed_libs=$(readelf -d "$FILE_NAME" 2>/dev/null | \
+                      awk '/NEEDED/ {print $5}' | tr -d '[]' | sort -u)
+
+        local missing_flag=0
+        local libs_present=()   # rpath 模式下：记录在 TARGET_DIR 中存在的一级依赖
+        local lib
+
+        # rpath 模式下用来去重：同一个 base 只 set-rpath 一次
+        local -A rpath_patched=()
+
+        for lib in $needed_libs; do
+            local base
+            base=$(basename "$lib")
+
+            # 跳过 ld-linux 自身
+            case "$base" in
+                ld-linux*|ld-linux.so.2|ld-linux-x86-64.so.2)
+                    continue
+                    ;;
+            esac
+
+            if [ ! -f "$TARGET_DIR/$base" ]; then
+                echo -e "\033[33m[!] Missing $base in $TARGET_DIR\033[0m"
+                echo -e "\033[33m    -> Please copy $base to $TARGET_DIR\033[0m"
+                missing_flag=1
+            else
+                if [ "$mode" = "rpath" ]; then
+                    libs_present+=("$TARGET_DIR/$base")
+                    # 去重：只对第一次出现的 base 设 RUNPATH / 打印
+                    if [ -z "${rpath_patched[$base]}" ]; then
+                        echo -e "\033[32m[+] Found $base in $TARGET_DIR, set RUNPATH for it ...\033[0m"
+                        patchelf --set-rpath "$TARGET_DIR" "$TARGET_DIR/$base"
+                        rpath_patched[$base]=1
+                    fi
+                else
+                    echo -e "\033[32m[+] Found $base in $TARGET_DIR, replace-needed in main ...\033[0m"
+                    patchelf --replace-needed "$lib" "$TARGET_DIR/$base" "$FILE_NAME"
+                fi
+            fi
+        done
+
+        # 3.5) rpath 模式：检查「库的库」，并给找到的次级依赖打 RUNPATH + 提示 found（去重）
+        if [ "$mode" = "rpath" ] && [ "${#libs_present[@]}" -gt 0 ]; then
+            echo "[*] Checking transitive dependencies in $TARGET_DIR ..."
+            local so
+            for so in "${libs_present[@]}"; do
+                local sub_needed
+                sub_needed=$(readelf -d "$so" 2>/dev/null | \
+                             awk '/NEEDED/ {print $5}' | tr -d '[]' | sort -u)
+
+                local sub
+                for sub in $sub_needed; do
+                    local subbase
+                    subbase=$(basename "$sub")
+
+                    case "$subbase" in
+                        ld-linux*|ld-linux.so.2|ld-linux-x86-64.so.2)
+                            continue
+                            ;;
+                    esac
+
+                    if [ ! -f "$TARGET_DIR/$subbase" ]; then
+                        echo -e "\033[33m[!] Missing $subbase (needed by $(basename "$so")) in $TARGET_DIR\033[0m"
+                        echo -e "\033[33m    -> Please copy $subbase to $TARGET_DIR\033[0m"
+                        missing_flag=1
+                    else
+                        # 同样用 rpath_patched 去重：次级依赖如果之前已经处理过，就不再打印/patch
+                        if [ -z "${rpath_patched[$subbase]}" ]; then
+                            echo -e "\033[32m[+] Found $subbase in $TARGET_DIR (needed by $(basename "$so")), set RUNPATH for it ...\033[0m"
+                            patchelf --set-rpath "$TARGET_DIR" "$TARGET_DIR/$subbase"
+                            rpath_patched[$subbase]=1
+                        fi
+                    fi
+                done
+            done
+        fi
+
+        # 4) 根据是否缺库决定输出
+        if [ "$missing_flag" -ne 0 ]; then
+            echo -e "\033[31m[!] Missing dependencies detected. Please add them and rerun.\033[0m"
+            return 1
+        fi
+
+        die "[+] success"
+    else
+        # 有版本号但没给 TARGET_DIR：只打印匹配到的目录
+        printf '%s\n' "$libc_dir"
+        echo -e '\033[32mPlease specify the directory \033[0m'
+        return 1
+    fi
+}
+
+# 正常模式（set-rpath + 依赖检查 + 给依赖 .so 打 RUNPATH，并检查次级依赖）
 clibc() {
-    FILE_NAME=$1
-    LIBC_VERSION=$2
-    LIBC_DIR=$HOME/glibc-all-in-one
-    libc_dir=$(find $LIBC_DIR -name "$LIBC_VERSION*")
-    if [[ $3 =~ amd64 ]]; then
-        ARCH="amd64"
-    elif [[ $3 =~ i386 ]]; then
-        ARCH="i386"
-    fi
-    if [ "$libc_dir" = "" ];then
-        echo "Not support version or your $LIBC_DIR don't have libc"
-        exit
-    fi
-    if  [ "$3" ] 
-    then
-        version_number="${3##*2.31-0ubuntu9.}"
-        version_number="${version_number%%_*}"
-        Record $1
-        if [ "$ARCH" == "i386" ];then
-            patchelf --set-interpreter $3/ld-linux.so.2 --set-rpath $3/ $1
-        else
-            patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --set-rpath $3/ $1
-        fi
-
-        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* && "$version_number" -ge 9 ]]; then
-            sudo rm -rf /usr/lib/debug/.build-id/
-            sudo cp -r $3/.debug/.build-id/ /usr/lib/debug
-        fi
-        die "[+]success"
-    else
-        printf '%s\n' "$libc_dir"
-        echo -e '\033[32mPlease specify the directory \033[0m'
-    fi
+    _xclibc_core "rpath" "$@"
 }
 
-
+# replace 模式：同样检查主程序 NEEDED，要求库在目录里，然后用 --replace-needed 绑到绝对路径，不做层级检查
 clibc_replace_needed() {
-    FILE_NAME=$1
-    LIBC_VERSION=$2
-    LIBC_DIR=$HOME/glibc-all-in-one
-    libc_dir=$(find $LIBC_DIR -name "$LIBC_VERSION*")
-    if [[ $3 =~ amd64 ]]; then
-        ARCH="amd64"
-    elif [[ $3 =~ i386 ]]; then
-        ARCH="i386"
-    fi
-    if [ "$libc_dir" = "" ];then
-        echo "Not support version or your $LIBC_DIR don't have libc"
-        exit
-    fi
-    if  [ "$3" ] 
-    then
-        version_number="${3##*2.31-0ubuntu9.}"
-        version_number="${version_number%%_*}"
-        Record $1
-        if [ "$ARCH" == "i386" ];then
-            patchelf --set-interpreter $3/ld-linux.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
-        else
-            patchelf --set-interpreter $3/ld-linux-x86-64.so.2 --replace-needed libc.so.6 $3/libc.so.6 $1
-        fi
+    _xclibc_core "replace" "$@"
+}
 
-        if [[ $(echo "$LIBC_VERSION >= 2.34" | bc) -eq 1 ]] || [[ "$3" == "$HOME/glibc-all-in-one/libs/2.31-0ubuntu9."* && "$version_number" -ge 9 ]]; then
-            sudo rm -rf /usr/lib/debug/.build-id/
-            sudo cp -r $3/.debug/.build-id/ /usr/lib/debug
-        fi
-        die "[+]success"
+Record() {
+    local file="$1"
+    if [ ! -e "$file.bak" ]; then
+        cp "$file" "$file.bak"
+        echo "[*] Backup created: $file.bak"
+    fi
+}
+
+Restore() {
+    local file="$1"
+    if [ -e "$file.bak" ]; then
+        cp "$file.bak" "$file"
+        echo "[+] Restore $file from backup"
     else
-        printf '%s\n' "$libc_dir"
-        echo -e '\033[32mPlease specify the directory \033[0m'
+        echo "[!] No backup found for $file"
     fi
 }
 
-download_rpath() {
-    id=$libcversion'_'$arch
+# mode: "rpath" 使用 clibc，"need" 使用 clibc_replace_needed
+download_libc_and_patch() {
+    local mode="$1"        # rpath / need
+    local id="${libcversion}_${arch}"
     local LIBC_PREFIX="libc6_"
     local LIBC_DBG_PREFIX="libc6-dbg_"
-    local deb_name=$LIBC_PREFIX$id.deb
-    local dbg_name=$LIBC_DBG_PREFIX$id.deb
+    local deb_name="${LIBC_PREFIX}${id}.deb"
+    local dbg_name="${LIBC_DBG_PREFIX}${id}.deb"
+
     echo "Getting $id"
+
+    # 已有缓存则直接 patch
     if [ -d "$LIBC_DIR/libs/$id" ]; then
-        clibc $filename $version $LIBC_DIR/libs/$id
-        die "[+]success"
+        if [ "$mode" = "need" ]; then
+            clibc_replace_needed "$filename" "$version" "$LIBC_DIR/libs/$id"
+        else
+            clibc "$filename" "$version" "$LIBC_DIR/libs/$id"
+        fi
+        return
     fi
-    # download binary package
-    url="${urls[$deb_name]}"
-    dbg_url="${urls[$dbg_name]}"
+
+    mkdir -p "$LIBC_DIR/debs"
+    mkdir -p "$LIBC_DIR/libs"
+
+    # ------- 下载 libc 二进制包 -------
+    local url="${urls[$deb_name]}"
+    local dbg_url="${urls[$dbg_name]}"
 
     if [ -z "$url" ]; then
         url="$SOURCE/$deb_name"
+    fi
+    if [ -z "$dbg_url" ]; then
         dbg_url="$SOURCE/$dbg_name"
     fi
+
     echo "  -> Location: $url"
     echo "  -> Downloading libc binary package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name || download_old_rpath
+    if ! sudo wget "$url" -q -O "$LIBC_DIR/debs/$deb_name"; then
+        url="$OLD_SOURCE/$deb_name"
+        echo "  -> Fallback: $url"
+        sudo wget "$url" -q -O "$LIBC_DIR/debs/$deb_name" || die "Failed to download package from $url"
+    fi
+
     echo "  -> Extracting libc binary package"
-    mkdir $LIBC_DIR/libs/$id
-    extract $LIBC_DIR/debs/$deb_name $LIBC_DIR/libs/$id
+    mkdir -p "$LIBC_DIR/libs/$id"
+    extract "$LIBC_DIR/debs/$deb_name" "$LIBC_DIR/libs/$id"
     echo "  -> Package saved to $LIBC_DIR/libs/$id"
 
-    # download debug info package
+    # ------- 下载 libc debug 包 -------
     echo "  -> Location: $dbg_url"
     echo "  -> Downloading libc debug package"
-    sudo wget "$dbg_url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || download_old_rpath
+    if ! sudo wget "$dbg_url" -q -O "$LIBC_DIR/debs/$dbg_name"; then
+        dbg_url="$OLD_SOURCE/$dbg_name"
+        echo "  -> Fallback: $dbg_url"
+        sudo wget "$dbg_url" -q -O "$LIBC_DIR/debs/$dbg_name" || die "Failed to download package from $dbg_url"
+    fi
+
     echo "  -> Extracting libc debug package"
-    mkdir $LIBC_DIR/libs/$id/.debug
-    extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
+    mkdir -p "$LIBC_DIR/libs/$id/.debug"
+    extract "$LIBC_DIR/debs/$dbg_name" "$LIBC_DIR/libs/$id/.debug"
     echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
-    
-    clibc $filename $version $LIBC_DIR/libs/$id
-    die "[+]success"
+
+    # ------- 下载完成后进行 patch -------
+    if [ "$mode" = "need" ]; then
+        clibc_replace_needed "$filename" "$version" "$LIBC_DIR/libs/$id"
+    else
+        clibc "$filename" "$version" "$LIBC_DIR/libs/$id"
+    fi
 }
 
-download_old_rpath(){
-    id=$libcversion'_'$arch
-    local LIBC_PREFIX="libc6_"
-    local LIBC_DBG_PREFIX="libc6-dbg_"
-    local deb_name=$LIBC_PREFIX$id.deb
-    local dbg_name=$LIBC_DBG_PREFIX$id.deb
-    echo "Getting $id"
-    if [ -d "$LIBC_DIR/libs/$id" ]; then
-        clibc $filename $version $LIBC_DIR/libs/$id
-        die "[+]success"
-    fi
-    # download binary package
-    url="$OLD_SOURCE/$deb_name"
-    echo "  -> Location: $url"
-    echo "  -> Downloading libc binary package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name || die "Failed to download package from $url"
-    echo "  -> Extracting libc binary package"
-
-    mkdir $LIBC_DIR/libs/$id
-    extract $LIBC_DIR/debs/$deb_name $LIBC_DIR/libs/$id
-    echo "  -> Package saved to $LIBC_DIR/$libs/$id"
-
-    # download debug info package
-    url="$OLD_SOURCE/$dbg_name"
-    echo "  -> Location: $url"
-    echo "  -> Downloading libc debug package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || die "Failed to download package from $url"
-    echo "  -> Extracting libc debug package"
-    mkdir $LIBC_DIR/libs/$id/.debug
-    extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
-    echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
-    clibc $filename $version $LIBC_DIR/libs/$id
-    die "[+]success"
-}
-
-download_need() {
-    id=$libcversion'_'$arch
-    local LIBC_PREFIX="libc6_"
-    local LIBC_DBG_PREFIX="libc6-dbg_"
-    local deb_name=$LIBC_PREFIX$id.deb
-    local dbg_name=$LIBC_DBG_PREFIX$id.deb
-    echo "Getting $id"
-    if [ -d "$LIBC_DIR/libs/$id" ]; then
-        clibc_replace_needed $filename $version $LIBC_DIR/libs/$id
-        die "[+]success"
-    fi
-    # download binary package
-    url="${urls[$deb_name]}"
-    dbg_url="${urls[$dbg_name]}"
-
-    if [ -z "$url" ]; then
-        url="$SOURCE/$deb_name"
-        dbg_url="$SOURCE/$dbg_name"
-    fi
-    echo "  -> Location: $url"
-    echo "  -> Downloading libc binary package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name || download_old_need
-    echo "  -> Extracting libc binary package"
-    mkdir $LIBC_DIR/libs/$id
-    extract $LIBC_DIR/debs/$deb_name $LIBC_DIR/libs/$id
-    echo "  -> Package saved to $LIBC_DIR/libs/$id"
-
-    # download debug info package
-    echo "  -> Location: $dbg_url"
-    echo "  -> Downloading libc debug package"
-    sudo wget "$dbg_url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || download_old_need
-    echo "  -> Extracting libc debug package"
-    mkdir $LIBC_DIR/libs/$id/.debug
-    extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
-    echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
-    clibc_replace_needed $filename $version $LIBC_DIR/libs/$id
-    die "[+]success"
-}
-download_old_need(){
-    id=$libcversion'_'$arch
-    local LIBC_PREFIX="libc6_"
-    local LIBC_DBG_PREFIX="libc6-dbg_"
-    local deb_name=$LIBC_PREFIX$id.deb
-    local dbg_name=$LIBC_DBG_PREFIX$id.deb
-    echo "Getting $id"
-    if [ -d "$LIBC_DIR/libs/$id" ]; then
-        clibc_replace_needed $filename $version $LIBC_DIR/libs/$id
-        die "[+]success"
-    fi
-    # download binary package
-    url="$OLD_SOURCE/$deb_name"
-    echo "  -> Location: $url"
-    echo "  -> Downloading libc binary package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$deb_name || die "Failed to download package from $url"
-    echo "  -> Extracting libc binary package"
-
-    mkdir $LIBC_DIR/libs/$id
-    extract $LIBC_DIR/debs/$deb_name $LIBC_DIR/libs/$id
-    echo "  -> Package saved to $LIBC_DIR/libs/$id"
-
-    # download debug info package
-    url="$OLD_SOURCE/$dbg_name"
-    echo "  -> Location: $url"
-    echo "  -> Downloading libc debug package"
-    sudo wget "$url" 2>/dev/null -O $LIBC_DIR/debs/$dbg_name || die "Failed to download package from $url"
-    echo "  -> Extracting libc debug package"
-    mkdir $LIBC_DIR/libs/$id/.debug
-    extract $LIBC_DIR/debs/$dbg_name $LIBC_DIR/libs/$id/.debug
-    echo "  -> Package saved to $LIBC_DIR/libs/$id/.debug"
-    clibc_replace_needed $filename $version $LIBC_DIR/libs/$id
-    die "[+]success"
-}
 
 
 Download_libc(){
@@ -731,13 +784,7 @@ Download_libc(){
     fi
 }
 
-Record(){
-    if [ ! -e $1.bak ]; then
-        cp $1 $1.bak
-    else
-        cp $1.bak $1
-    fi
-}
+
 
 download_url() {
     LIBC_DIR=$HOME/glibc-all-in-one
@@ -810,6 +857,28 @@ remove_libc(){
 }
 
 
+progress_bar() {
+    local index=$1      # 当前索引（从 1 开始）
+    local total=$2      # 总数
+    local extra="$3"    # 当前版本号
+
+    (( total == 0 )) && return
+
+    local percent=$((100 * index / total))
+    local width=40
+    local filled=$((percent * width / 100))
+
+    local bar
+    bar=$(printf '%0.s#' $(seq 1 $filled))
+    local spaces
+    spaces=$(printf '%0.s ' $(seq 1 $((width - filled))))
+
+    # \r 回到行首，\033[K 清除到行尾，避免残留字符
+    printf "\r\033[Kprogress:[%s%s] %3d%% (%d/%d) %s" \
+        "$bar" "$spaces" "$percent" "$index" "$total" "$extra"
+}
+
+
 
 while getopts 's:x:hvc:e:r:d' OPT
 do
@@ -820,24 +889,28 @@ do
         echo -e "\033[32mLIBC_VERSION: \033[0m"$libcversion
         ;;
         x)
-        if [ "$2" = "-n" ];then
+        LIBC_DIR=$HOME/glibc-all-in-one
+        SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
+        OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
+
+        if [ "$2" = "-n" ]; then
             filename=$3
             libcname=$4
-            LIBC_DIR=$HOME/glibc-all-in-one
-            SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
-            OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
-            get_arch "$4"
-            get_ver
-            download_need
-        else  
+        else
             filename=$2
             libcname=$3
-            LIBC_DIR=$HOME/glibc-all-in-one
-            SOURCE="https://mirror.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc"
-            OLD_SOURCE="http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
-            get_arch "$3"
-            get_ver
-            download_rpath
+        fi
+        if [ ! -f "$filename" ]; then
+            die "[!] ELF not found: $filename"
+        fi
+
+        get_arch "$libcname"
+        get_ver
+
+        if [ "$2" = "-n" ]; then
+            download_libc_and_patch "need"
+        else
+            download_libc_and_patch "rpath"
         fi
         ;;
         c)
@@ -870,77 +943,73 @@ do
         fi
         ;;
         r)
-        if [ "$2" != "-r" ];
-        then
-            Record $2
-            echo -e "[+]restore!"
-        fi
+        Restore "$2"
         ;;
         d)
-        if [ "$2" = "-r" ];
-        then
-            remove_libc $3
-        elif [ "$2" = "-u" ]
-        then
-            cd $HOME/glibc-all-in-one
-            $HOME/glibc-all-in-one/update_list
+        if [ "$2" = "-r" ]; then
+            remove_libc "$3"
+        elif [ "$2" = "all" ]; then
+            echo "[+] update glibc_all_in_one list"
+            cd "$HOME/glibc-all-in-one" || exit 1
+            "$HOME/glibc-all-in-one/update_list"
             
             version_count=$(cat "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list" | wc -l)
             version_index=0
-
-            while IFS= read -r version
-            do
-                if grep -Fxq "$version" "$HOME/glibc-all-in-one/list"
-                then
-                    if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
-                        echo "$version  --> Downloaded before"
+            echo
+            while IFS= read -r version; do
+                if grep -Fxq "$version" "$HOME/glibc-all-in-one/list"; then
+                    if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && \
+                       [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                        :
                     else
                         download "$version"
-                        if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
-                            chmod 755 -R $HOME/glibc-all-in-one/libs/$version
+                        if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && \
+                           [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                            chmod 755 -R "$HOME/glibc-all-in-one/libs/$version"
                         else
                             echo -e "\033[31m$version The libc directory file is missing a file and has now been removed! \033[0m"
-                            rm -rf $HOME/glibc-all-in-one/libs/$version
-                            exit
+                            rm -rf "$HOME/glibc-all-in-one/libs/$version"
+                            exit 1
                         fi
                     fi
-                elif grep -Fxq "$version" "$HOME/glibc-all-in-one/old_list"
-                then
-                   if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
-                        echo "$version  --> Downloaded before"
+                elif grep -Fxq "$version" "$HOME/glibc-all-in-one/old_list"; then
+                    if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && \
+                       [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                        :
                     else
                         download_old "$version"
-                        if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
-                            chmod 755 -R $HOME/glibc-all-in-one/libs/$version
+                        if [ -f "$HOME/glibc-all-in-one/libs/$version/libc.so.6" ] && \
+                           [ -d "$HOME/glibc-all-in-one/libs/$version/.debug" ]; then
+                            chmod 755 -R "$HOME/glibc-all-in-one/libs/$version"
                         else
                             echo -e "\033[31m$version The libc directory file is missing a file and has now been removed! \033[0m"
-                            rm -rf $HOME/glibc-all-in-one/libs/$version
-                            exit
+                            rm -rf "$HOME/glibc-all-in-one/libs/$version"
+                            exit 1
                         fi
                     fi
                 fi
-                let version_index++
-                percent=$((100*version_index/version_count))
-                ratio=$((percent*40/100))
-                mark=$(printf '%.0s#' $(seq 1 $ratio))
-                printf "progress:[%-40s]%d%%\r" "${mark}" "${percent}"
-                echo
+
+                version_index=$((version_index + 1))
+                progress_bar "$version_index" "$version_count" "$version"
 
             done < <(cat "$HOME/glibc-all-in-one/list" "$HOME/glibc-all-in-one/old_list")
+
+            echo    # 进度条结束后换一行
             echo
+
             read -p "Do you want to download additional libc? (y/n): " choice
             choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
             if [ "$choice" = "y" ]; then
                 echo "Downloading additional libc..."
                 download_old_libc
             fi
-            exit
+            exit 0
         else
-            Download_libc $2
+            Download_libc "$2"
         fi
         ;;
         v)
-        echo "xclibc v1.6"
+        echo "xclibc v1.8"
         echo "------------------------"
         echo "|Update based on xclibc|"
         echo "|Writen by E4L4        |"
@@ -948,30 +1017,8 @@ do
         exit -1
         ;;
         h)
-        echo "Usage: xclibc [OPTION]...[FILE]..."
-        echo "Change the libc environment for file running."
-        echo ""
-        echo "  -s,[libcfile]                          see the libc file version"
-        echo "  -x,<-n> [file] [libcfile]              change the libc environment,-n:by modifying --replace-needed"
-        echo "  -c,<-n> [file] [version] [dir]         change the specified libc version environment,-n:by modifying --replace-needed"
-        echo "  -d,<-r/-u> [version]]                  download the libc version"
-        # echo "  -e,[deb]                             extract the deb to the glibc-all-in-one"
-        echo "  -r,[file]                              restore original file"
-        echo "  -h,                                    display this help and exit"
-        echo "  -v,                                    output version information and exit"
-        echo ""
-        # echo "Examples:"
-        # echo "  xclibc -x pwn libc.so.6"
-        # echo "        switch the version environment of the libc.so.6"
-        # echo "  xclibc -c pwn 2.35 [Enter]"
-        # echo "  xclibc -c pwn 2.35 /home/pwn/glibc-all-in-one/libs/2.35-0ubuntu3_amd64"
-        # echo "        you can switch the libc environment where the pwn file runs to 2.35-0ubuntu3_amd64"
-        # echo "  xclibc -d [Enter]"
-        # echo "  xclibc -d 2.37-0ubuntu2_amd64"
-        # echo "  xclibc -d all"
-        # echo "        you can download all the libc versions on the source"
-        # echo "LRY"
-        exit -1
+        show_help
+        exit 0
         ;;
     esac
 done
