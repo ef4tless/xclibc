@@ -5,8 +5,12 @@
 一个在CTF比赛中用于切换题目运行libc环境的工具，支持目前所有版本
 
 ## 安装
+安装patchelf
+```
+sudo apt install patchelf
+```
 
-这个脚本是基于最新版的[glibc-all-in-one](https://github.com/matrix1001/glibc-all-in-one)，我建议你将其安装到`~`目录
+安装最新版的[glibc-all-in-one](https://github.com/matrix1001/glibc-all-in-one)，我建议你将其安装到`~`目录
 
 ```bash
 git clone https://github.com/matrix1001/glibc-all-in-one
