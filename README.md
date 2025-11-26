@@ -68,10 +68,9 @@ xclibc [选项] [参数]
 -s [libc文件] # 查看libc文件版本
 -x [-n] [文件] [libc文件] # 一键给文件配置libc文件相应版本的环境（添加-n选项可以使用修改--replace-needed的方式实现）
 -c [-n] [文件] [libc大版本号] [libc小版本环境路径] # 给文件配置指定的libc环境，输入大版本号后回车，可自由选择复制libc小版本环境路径（添加-n选项可以使用修改--replace-needed的方式实现）
--d <-r/-all> [version]
-#  -d [ENTER] 可以查看所有可下载的libc版本
+-d [ENTER] 可以查看所有可下载的libc版本
 #  -d -r [version] 删除相应的libc版本库
-#  -d -all 更新最新的所有libc版本
+#  -d all 下载 glibc_all_in_one 最新的所有libc版本
 #  -d [version] 下载对应版本的libc
 -e [deb包] # 解压相应的libc_deb包至glibc_all_in_one路径，通常一个版本需要解压一份本体deb和一份debug_deb包
 -r [文件] # 恢复修改过的文件至初始状态
